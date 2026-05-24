@@ -15,8 +15,20 @@ function dateFilters(from?: string, to?: string) {
   return conds.length ? and(...conds) : undefined
 }
 
+function expenseDateFilters(from?: string, to?: string) {
+  const conds = []
+  if (from) conds.push(gte(expenses.date, new Date(from)))
+  if (to) {
+    const end = new Date(to)
+    end.setHours(23, 59, 59, 999)
+    conds.push(lte(expenses.date, end))
+  }
+  return conds.length ? and(...conds) : undefined
+}
+
 export async function getAnalyticsSummary(from?: string, to?: string) {
   const where = dateFilters(from, to)
+  const expensesWhere = expenseDateFilters(from, to)
 
   const [salesRow, expensesRow] = await Promise.all([
     db.select({
@@ -28,7 +40,7 @@ export async function getAnalyticsSummary(from?: string, to?: string) {
       txCount: sql<number>`count(*)`,
       avgMargin: sql<string>`coalesce(avg(${sales.netProfit} / nullif(${sales.totalSale}, 0)), 0)`,
     }).from(sales).where(where),
-    db.select({ total: sql<string>`coalesce(sum(${expenses.total}), 0)` }).from(expenses),
+    db.select({ total: sql<string>`coalesce(sum(${expenses.total}), 0)` }).from(expenses).where(expensesWhere),
   ])
 
   const rev = Number(salesRow[0]?.totalRevenue ?? 0)

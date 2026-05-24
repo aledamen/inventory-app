@@ -20,7 +20,7 @@ export default async function StockPage() {
         </div>
         <StockFormDialog products={products} lookups={lookups} />
       </div>
-      <StockTable movements={movements} />
+      <StockTable movements={movements} products={products} lookups={lookups} />
     </div>
   )
 }

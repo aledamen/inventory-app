@@ -27,6 +27,7 @@ export default async function DashboardPage() {
             value={$(stats.stockValueAtCost)}
             sub="inversión inmovilizada"
             icon={<DollarSign className="w-4 h-4" />}
+            href="/dashboard/products"
           />
           <KpiCard
             title="Valor al precio"
@@ -34,6 +35,7 @@ export default async function DashboardPage() {
             sub="facturación potencial"
             variant="blue"
             icon={<Package className="w-4 h-4" />}
+            href="/dashboard/products"
           />
           <KpiCard
             title="Ganancia potencial"
@@ -41,6 +43,7 @@ export default async function DashboardPage() {
             sub="si se vende todo"
             variant="success"
             icon={<TrendingUp className="w-4 h-4" />}
+            href="/dashboard/analytics"
           />
           <KpiCard
             title="Alertas de stock"
@@ -48,6 +51,7 @@ export default async function DashboardPage() {
             sub="productos con problemas"
             variant={stats.outOfStockCount > 0 ? 'danger' : stats.lowStockCount > 0 ? 'warning' : 'default'}
             icon={<AlertTriangle className="w-4 h-4" />}
+            href="/dashboard/products"
           />
         </div>
       </div>
@@ -61,24 +65,28 @@ export default async function DashboardPage() {
             value={String(stats.monthlySalesCount)}
             sub="transacciones"
             icon={<ShoppingCart className="w-4 h-4" />}
+            href="/dashboard/sales"
           />
           <KpiCard
             title="Facturación"
             value={$(stats.monthlyRevenue)}
             variant="blue"
             icon={<DollarSign className="w-4 h-4" />}
+            href="/dashboard/sales"
           />
           <KpiCard
             title="Ganancia neta"
             value={$(stats.monthlyNetProfit)}
             variant="success"
             icon={<TrendingUp className="w-4 h-4" />}
+            href="/dashboard/analytics"
           />
           <KpiCard
-            title="Gastos totales"
-            value={$(stats.totalExpenses)}
-            variant={stats.totalExpenses > 0 ? 'warning' : 'default'}
+            title="Gastos del mes"
+            value={$(stats.monthlyExpenses)}
+            variant={stats.monthlyExpenses > 0 ? 'warning' : 'default'}
             icon={<Wallet className="w-4 h-4" />}
+            href="/dashboard/expenses"
           />
         </div>
       </div>

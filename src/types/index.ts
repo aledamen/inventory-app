@@ -21,12 +21,14 @@ export type StockMovementWithProduct = {
   id: number
   movementNumber: number
   date: Date
+  productId: number
   productSku: string | null
   productName: string | null
   productFlavor: string | null
   quantity: number
   unitCost: string | null
   total: string | null
+  paymentMethodId: number | null
   paymentMethod: string | null
   note: string | null
 }
@@ -35,6 +37,7 @@ export type SaleWithProduct = {
   id: number
   saleNumber: number
   date: Date
+  productId: number
   productSku: string | null
   productName: string | null
   productFlavor: string | null
@@ -42,6 +45,7 @@ export type SaleWithProduct = {
   effectivePrice: string | null
   totalSale: string | null
   netProfit: string | null
+  paymentMethodId: number | null
   paymentMethod: string | null
   notes: string | null
 }

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -6,6 +7,7 @@ type Props = {
   sub?: string
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'blue'
   icon?: React.ReactNode
+  href?: string
 }
 
 const variantStyles = {
@@ -16,10 +18,10 @@ const variantStyles = {
   danger: { card: 'border-red-200 bg-red-50/60', value: 'text-red-600', dot: 'bg-red-500' },
 }
 
-export function KpiCard({ title, value, sub, variant = 'default', icon }: Props) {
+export function KpiCard({ title, value, sub, variant = 'default', icon, href }: Props) {
   const s = variantStyles[variant]
-  return (
-    <div className={cn('rounded-xl border bg-card px-5 py-4 space-y-3', s.card)}>
+  const inner = (
+    <div className={cn('rounded-xl border bg-card px-5 py-4 space-y-3', s.card, href && 'hover:shadow-md transition-shadow cursor-pointer')}>
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
         {icon && <span className="text-muted-foreground">{icon}</span>}
@@ -30,4 +32,6 @@ export function KpiCard({ title, value, sub, variant = 'default', icon }: Props)
       </div>
     </div>
   )
+  if (href) return <Link href={href} className="block">{inner}</Link>
+  return inner
 }

@@ -44,7 +44,7 @@ export async function getDashboardStats() {
       .orderBy(desc(sales.date))
       .limit(5),
 
-    db.select({ total: sql<string>`sum(${expenses.total})` }).from(expenses),
+    db.select({ total: sql<string>`coalesce(sum(${expenses.total}), 0)` }).from(expenses).where(gte(expenses.date, firstOfMonth)),
   ])
 
   const stockValueAtCost = allProducts.reduce((acc, p) => acc + p.stock * Number(p.cost), 0)
@@ -59,7 +59,7 @@ export async function getDashboardStats() {
     monthlyRevenue: Number(monthlySalesRows[0]?.totalSale ?? 0),
     monthlyNetProfit: Number(monthlySalesRows[0]?.totalNetProfit ?? 0),
     monthlySalesCount: Number(monthlySalesRows[0]?.count ?? 0),
-    totalExpenses: Number(expensesRows[0]?.total ?? 0),
+    monthlyExpenses: Number(expensesRows[0]?.total ?? 0),
     lowStockCount,
     outOfStockCount,
     recentSales: recentSalesRows,
