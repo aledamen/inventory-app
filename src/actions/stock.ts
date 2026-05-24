@@ -1,0 +1,68 @@
+'use server'
+
+import { db } from '@/db'
+import { stockMovements, products, paymentMethods, flavors } from '@/db/schema'
+import { eq, desc, sql } from 'drizzle-orm'
+import { revalidatePath } from 'next/cache'
+
+export async function getStockMovements() {
+  return db
+    .select({
+      id: stockMovements.id,
+      movementNumber: stockMovements.movementNumber,
+      date: stockMovements.date,
+      productSku: products.sku,
+      productName: products.name,
+      productFlavor: flavors.name,
+      quantity: stockMovements.quantity,
+      unitCost: stockMovements.unitCost,
+      total: stockMovements.total,
+      paymentMethod: paymentMethods.name,
+      note: stockMovements.note,
+    })
+    .from(stockMovements)
+    .leftJoin(products, eq(stockMovements.productId, products.id))
+    .leftJoin(flavors, eq(products.flavorId, flavors.id))
+    .leftJoin(paymentMethods, eq(stockMovements.paymentMethodId, paymentMethods.id))
+    .orderBy(desc(stockMovements.date))
+}
+
+export async function createStockMovement(data: {
+  productId: number
+  quantity: number
+  unitCost?: number
+  paymentMethodId?: number
+  note?: string
+  date: Date
+}) {
+  const lastNum = await db
+    .select({ max: sql<number>`max(${stockMovements.movementNumber})` })
+    .from(stockMovements)
+
+  const nextNum = (lastNum[0]?.max ?? 0) + 1
+
+  await db.transaction(async (tx) => {
+    await tx.insert(stockMovements).values({
+      movementNumber: nextNum,
+      type: 'entrada',
+      productId: data.productId,
+      quantity: data.quantity,
+      unitCost: data.unitCost ? String(data.unitCost) : null,
+      total: data.unitCost ? String(data.unitCost * data.quantity) : null,
+      paymentMethodId: data.paymentMethodId,
+      note: data.note,
+      date: data.date,
+    })
+
+    await tx
+      .update(products)
+      .set({
+        stock: sql`${products.stock} + ${data.quantity}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(products.id, data.productId))
+  })
+
+  revalidatePath('/dashboard/stock')
+  revalidatePath('/dashboard/products')
+}
