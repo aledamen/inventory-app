@@ -20,7 +20,7 @@ export default async function ReturnsPage() {
         </div>
         <ReturnFormDialog products={productsData} clients={clientsData} />
       </div>
-      <ReturnsTable returns={returnsData} />
+      <ReturnsTable returns={returnsData} products={productsData} clients={clientsData} />
     </div>
   )
 }

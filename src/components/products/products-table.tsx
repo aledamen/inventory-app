@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import {
@@ -13,13 +13,16 @@ import { ProductFormDialog } from './product-form-dialog'
 import { deleteProduct } from '@/actions/products'
 import { toggleProductVisible } from '@/actions/upload'
 import type { ProductWithRelations } from '@/types'
-import { Trash2, Eye, EyeOff } from 'lucide-react'
+import { Trash2, Eye, EyeOff, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 type Props = {
   products: ProductWithRelations[]
   lookups: { categories: {id:number,name:string}[], brands: {id:number,name:string}[], flavors: {id:number,name:string}[] }
 }
+
+type SortField = 'sku' | 'name' | 'brand' | 'cost' | 'stock'
 
 function stockBadge(stock: number, min: number | null) {
   if (stock === 0) return <Badge variant="destructive">Sin stock</Badge>
@@ -30,12 +33,39 @@ function stockBadge(stock: number, min: number | null) {
 export function ProductsTable({ products, lookups }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
-  const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.sku.toLowerCase().includes(search.toLowerCase()) ||
-    (p.brand?.toLowerCase().includes(search.toLowerCase()) ?? false)
-  )
+  function handleSort(field: SortField) {
+    if (field === sortField) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir('asc') }
+  }
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase()
+    let rows = q
+      ? products.filter(p =>
+          p.name.toLowerCase().includes(q) ||
+          p.sku.toLowerCase().includes(q) ||
+          (p.brand?.toLowerCase().includes(q) ?? false)
+        )
+      : [...products]
+
+    rows.sort((a, b) => {
+      let av: string | number, bv: string | number
+      switch (sortField) {
+        case 'sku':   av = a.sku;              bv = b.sku;              break
+        case 'name':  av = a.name;             bv = b.name;             break
+        case 'brand': av = a.brand ?? '';      bv = b.brand ?? '';      break
+        case 'cost':  av = Number(a.cost);     bv = Number(b.cost);     break
+        case 'stock': av = a.stock;            bv = b.stock;            break
+      }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+    return rows
+  }, [products, search, sortField, sortDir])
 
   async function handleDelete(id: number, name: string) {
     if (!confirm(`¿Eliminar "${name}"?`)) return
@@ -58,6 +88,20 @@ export function ProductsTable({ products, lookups }: Props) {
     }
   }
 
+  function SortHead({ field, children, className }: { field: SortField; children: React.ReactNode; className?: string }) {
+    const active = sortField === field
+    return (
+      <TableHead className={cn('cursor-pointer select-none hover:text-foreground', className)} onClick={() => handleSort(field)}>
+        <div className="flex items-center gap-1">
+          {children}
+          {active
+            ? sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+            : <ChevronsUpDown className="h-3 w-3 opacity-30" />}
+        </div>
+      </TableHead>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <Input
@@ -71,12 +115,12 @@ export function ProductsTable({ products, lookups }: Props) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12"></TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Nombre</TableHead>
+              <SortHead field="sku">SKU</SortHead>
+              <SortHead field="name">Nombre</SortHead>
               <TableHead>Sabor</TableHead>
-              <TableHead>Marca</TableHead>
-              <TableHead className="text-right">Costo</TableHead>
-              <TableHead className="text-center">Stock</TableHead>
+              <SortHead field="brand">Marca</SortHead>
+              <SortHead field="cost" className="text-right">Costo</SortHead>
+              <SortHead field="stock" className="text-center">Stock</SortHead>
               <TableHead className="text-center">Catálogo</TableHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
@@ -116,7 +160,7 @@ export function ProductsTable({ products, lookups }: Props) {
                     size="icon"
                     className={`h-7 w-7 ${p.visible ? 'text-green-600' : 'text-muted-foreground'}`}
                     onClick={() => handleToggleVisible(p.id, p.visible)}
-                    title={p.visible ? 'Visible en catálogo — clic para ocultar' : 'Oculto del catálogo — clic para publicar'}
+                    title={p.visible ? 'Visible — clic para ocultar' : 'Oculto — clic para publicar'}
                   >
                     {p.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                   </Button>

@@ -19,6 +19,16 @@ export async function createExpense(data: { type: string; total: number; date?: 
   revalidatePath('/dashboard')
 }
 
+export async function updateExpense(id: number, data: { type: string; total: number; date?: Date }) {
+  await db.update(expenses).set({
+    type: data.type,
+    total: String(data.total),
+    ...(data.date ? { date: data.date } : {}),
+  }).where(eq(expenses.id, id))
+  revalidatePath('/dashboard/expenses')
+  revalidatePath('/dashboard')
+}
+
 export async function deleteExpense(id: number) {
   await db.delete(expenses).where(eq(expenses.id, id))
   revalidatePath('/dashboard/expenses')

@@ -2,7 +2,7 @@
 
 import { db } from '@/db'
 import { returns, products, clients, sales } from '@/db/schema'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 export async function getReturns() {
@@ -46,6 +46,44 @@ export async function createReturn(data: {
       .set({ stock: sql`${products.stock} + ${data.quantity}` })
       .where(eq(products.id, data.productId))
   })
+  revalidatePath('/dashboard/returns')
+  revalidatePath('/dashboard/products')
+}
+
+export async function updateReturn(id: number, data: {
+  productId: number
+  clientId?: number | null
+  saleId?: number | null
+  quantity: number
+  reason?: string
+  refundAmount?: number | null
+  date: Date
+}) {
+  const existing = await db.select().from(returns).where(eq(returns.id, id)).limit(1)
+  if (!existing[0]) throw new Error('Devolución no encontrada')
+  const old = existing[0]
+
+  await db.transaction(async (tx) => {
+    // Reverse old stock restoration
+    await tx.update(products)
+      .set({ stock: sql`${products.stock} - ${old.quantity}` })
+      .where(eq(products.id, old.productId))
+    // Apply new stock restoration
+    await tx.update(products)
+      .set({ stock: sql`${products.stock} + ${data.quantity}` })
+      .where(eq(products.id, data.productId))
+    // Update record
+    await tx.update(returns).set({
+      productId: data.productId,
+      clientId: data.clientId ?? null,
+      saleId: data.saleId ?? null,
+      quantity: data.quantity,
+      reason: data.reason ?? null,
+      refundAmount: data.refundAmount ? String(data.refundAmount) : null,
+      date: data.date,
+    }).where(eq(returns.id, id))
+  })
+
   revalidatePath('/dashboard/returns')
   revalidatePath('/dashboard/products')
 }

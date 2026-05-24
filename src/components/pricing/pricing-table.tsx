@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { updatePricing } from '@/actions/pricing'
 import { toast } from 'sonner'
-import { Check, Pencil, X } from 'lucide-react'
+import { Check, Pencil, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 type PricingRow = {
   id: number
@@ -29,12 +30,8 @@ type PricingRow = {
   profit: string | null
 }
 
-type EditState = {
-  marginCash: string
-  marginTransfer: string
-  marginList: string
-  clientShipping: string
-}
+type EditState = { marginCash: string; marginTransfer: string; marginList: string; clientShipping: string }
+type SortField = 'sku' | 'name' | 'totalCost' | 'marginCash' | 'priceCashRounded' | 'priceListRounded' | 'profit'
 
 const pct = (v: string | null) => v ? `${(Number(v) * 100).toFixed(0)}%` : '—'
 const $ = (v: number | null) => v ? `$${v.toLocaleString('es-AR')}` : '—'
@@ -45,11 +42,37 @@ export function PricingTable({ rows }: { rows: PricingRow[] }) {
   const [editState, setEditState] = useState<EditState | null>(null)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
-  const filtered = rows.filter(r =>
-    (r.name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-    (r.sku?.toLowerCase().includes(search.toLowerCase()) ?? false)
-  )
+  function handleSort(field: SortField) {
+    if (field === sortField) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir('asc') }
+  }
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase()
+    let list = q
+      ? rows.filter(r => r.name?.toLowerCase().includes(q) || r.sku?.toLowerCase().includes(q))
+      : [...rows]
+
+    list.sort((a, b) => {
+      let av: string | number, bv: string | number
+      switch (sortField) {
+        case 'sku':              av = a.sku ?? '';                    bv = b.sku ?? '';                    break
+        case 'name':             av = a.name ?? '';                   bv = b.name ?? '';                   break
+        case 'totalCost':        av = Number(a.totalCost ?? 0);       bv = Number(b.totalCost ?? 0);       break
+        case 'marginCash':       av = Number(a.marginCash ?? 0);      bv = Number(b.marginCash ?? 0);      break
+        case 'priceCashRounded': av = a.priceCashRounded ?? 0;        bv = b.priceCashRounded ?? 0;        break
+        case 'priceListRounded': av = a.priceListRounded ?? 0;        bv = b.priceListRounded ?? 0;        break
+        case 'profit':           av = Number(a.profit ?? 0);          bv = Number(b.profit ?? 0);          break
+      }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+    return list
+  }, [rows, search, sortField, sortDir])
 
   function startEdit(row: PricingRow) {
     setEditingId(row.id)
@@ -74,35 +97,41 @@ export function PricingTable({ rows }: { rows: PricingRow[] }) {
       toast.success('Precios actualizados')
       setEditingId(null)
       router.refresh()
-    } catch {
-      toast.error('Error al actualizar')
-    } finally {
-      setLoading(false)
-    }
+    } catch { toast.error('Error al actualizar') }
+    finally { setLoading(false) }
+  }
+
+  function SortHead({ field, children, className }: { field: SortField; children: React.ReactNode; className?: string }) {
+    const active = sortField === field
+    return (
+      <TableHead className={cn('cursor-pointer select-none hover:text-foreground', className)} onClick={() => handleSort(field)}>
+        <div className="flex items-center gap-1">
+          {children}
+          {active
+            ? sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+            : <ChevronsUpDown className="h-3 w-3 opacity-30" />}
+        </div>
+      </TableHead>
+    )
   }
 
   return (
     <div className="space-y-4">
-      <Input
-        placeholder="Buscar por nombre o SKU..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
+      <Input placeholder="Buscar por nombre o SKU..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-sm" />
       <div className="bg-card rounded-xl border border-border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>SKU</TableHead>
-              <TableHead>Producto</TableHead>
-              <TableHead className="text-right">Costo total</TableHead>
-              <TableHead className="text-center">Mg. Ef.</TableHead>
+              <SortHead field="sku">SKU</SortHead>
+              <SortHead field="name">Producto</SortHead>
+              <SortHead field="totalCost" className="text-right">Costo total</SortHead>
+              <SortHead field="marginCash" className="text-center">Mg. Ef.</SortHead>
               <TableHead className="text-center">Mg. Trans.</TableHead>
               <TableHead className="text-center">Mg. Lista</TableHead>
-              <TableHead className="text-right">P. Efectivo</TableHead>
+              <SortHead field="priceCashRounded" className="text-right">P. Efectivo</SortHead>
               <TableHead className="text-right">P. Trans.</TableHead>
-              <TableHead className="text-right">P. Lista</TableHead>
-              <TableHead className="text-right">Ganancia</TableHead>
+              <SortHead field="priceListRounded" className="text-right">P. Lista</SortHead>
+              <SortHead field="profit" className="text-right">Ganancia</SortHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
@@ -110,13 +139,12 @@ export function PricingTable({ rows }: { rows: PricingRow[] }) {
             {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
-                  No hay datos de precios. Ejecutá la migración primero.
+                  No hay datos de precios.
                 </TableCell>
               </TableRow>
             )}
             {filtered.map(row => {
               const isEditing = editingId === row.id
-
               return (
                 <TableRow key={row.id}>
                   <TableCell className="font-mono text-xs">{row.sku ?? '—'}</TableCell>

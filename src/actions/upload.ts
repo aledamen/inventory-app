@@ -60,4 +60,5 @@ export async function toggleProductVisible(productId: number, visible: boolean) 
     .where(eq(products.id, productId))
 
   revalidatePath('/dashboard/products')
+  revalidatePath('/api/catalog')
 }
