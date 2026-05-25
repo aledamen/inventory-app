@@ -17,15 +17,14 @@ export async function getDashboardStats() {
     db.select({
       stock: products.stock,
       stockMin: products.stockMin,
-      cost: products.cost,
+      totalCost: pricing.totalCost,
       priceCashRounded: pricing.priceCashRounded,
-      profit: pricing.profit,
     }).from(products).leftJoin(pricing, eq(products.id, pricing.productId)),
 
     db.select({
       totalSale: sql<string>`sum(${sales.totalSale})`,
       totalNetProfit: sql<string>`sum(${sales.netProfit})`,
-      count: sql<number>`count(*)`,
+      count: sql<number>`count(distinct ${sales.saleNumber})`,
     }).from(sales).where(gte(sales.date, firstOfMonth)),
 
     db.select({
@@ -47,7 +46,7 @@ export async function getDashboardStats() {
     db.select({ total: sql<string>`coalesce(sum(${expenses.total}), 0)` }).from(expenses).where(gte(expenses.date, firstOfMonth)),
   ])
 
-  const stockValueAtCost = allProducts.reduce((acc, p) => acc + p.stock * Number(p.cost), 0)
+  const stockValueAtCost = allProducts.reduce((acc, p) => acc + p.stock * Number(p.totalCost ?? 0), 0)
   const stockValueAtPrice = allProducts.reduce((acc, p) => acc + p.stock * (p.priceCashRounded ?? 0), 0)
   const lowStockCount = allProducts.filter(p => p.stock > 0 && p.stockMin != null && p.stock <= p.stockMin).length
   const outOfStockCount = allProducts.filter(p => p.stock === 0).length

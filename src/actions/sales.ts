@@ -58,31 +58,29 @@ export async function createSale(data: {
 
   const nextNum = (lastNum[0]?.max ?? 0) + 1
 
-  await db.transaction(async (tx) => {
-    await tx.insert(sales).values({
-      saleNumber: nextNum,
-      type: 'salida',
-      productId: data.productId,
-      quantity: data.quantity,
-      effectivePrice: String(data.effectivePrice),
-      saleValue: String(saleValue),
-      totalSale: String(saleValue),
-      totalCost: String(totalCost),
-      netProfit: String(netProfit),
-      grossProfit: String(saleValue),
-      paymentMethodId: data.paymentMethodId,
-      notes: data.notes,
-      date: data.date,
-    })
-
-    await tx
-      .update(products)
-      .set({
-        stock: sql`${products.stock} - ${data.quantity}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(products.id, data.productId))
+  await db.insert(sales).values({
+    saleNumber: nextNum,
+    type: 'salida',
+    productId: data.productId,
+    quantity: data.quantity,
+    effectivePrice: String(data.effectivePrice),
+    saleValue: String(saleValue),
+    totalSale: String(saleValue),
+    totalCost: String(totalCost),
+    netProfit: String(netProfit),
+    grossProfit: String(saleValue),
+    paymentMethodId: data.paymentMethodId,
+    notes: data.notes,
+    date: data.date,
   })
+
+  await db
+    .update(products)
+    .set({
+      stock: sql`${products.stock} - ${data.quantity}`,
+      updatedAt: new Date(),
+    })
+    .where(eq(products.id, data.productId))
 
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')
@@ -97,7 +95,6 @@ export async function updateSale(id: number, data: {
   notes?: string
   date: Date
 }) {
-  try {
   const existing = await db.select().from(sales).where(eq(sales.id, id)).limit(1)
   if (!existing[0]) throw new Error('Venta no encontrada')
   const old = existing[0]
@@ -111,7 +108,6 @@ export async function updateSale(id: number, data: {
 
   if (!product[0]) throw new Error('Producto no encontrado')
 
-  // After restoring the old sale, effective available stock for the new product
   const effectiveStock = product[0].stock + (old.productId === data.productId ? old.quantity : 0)
   if (effectiveStock < data.quantity) throw new Error('Stock insuficiente')
 
@@ -119,52 +115,41 @@ export async function updateSale(id: number, data: {
   const saleValue = data.effectivePrice * data.quantity
   const netProfit = saleValue - totalCost
 
-  await db.transaction(async (tx) => {
-    // Restore old product stock
-    await tx.update(products)
-      .set({ stock: sql`${products.stock} + ${old.quantity}`, updatedAt: new Date() })
-      .where(eq(products.id, old.productId))
+  await db.update(products)
+    .set({ stock: sql`${products.stock} + ${old.quantity}`, updatedAt: new Date() })
+    .where(eq(products.id, old.productId))
 
-    // Update sale record
-    await tx.update(sales).set({
-      ...(data.saleNumber !== undefined ? { saleNumber: data.saleNumber } : {}),
-      productId: data.productId,
-      quantity: data.quantity,
-      effectivePrice: String(data.effectivePrice),
-      saleValue: String(saleValue),
-      totalSale: String(saleValue),
-      totalCost: String(totalCost),
-      netProfit: String(netProfit),
-      grossProfit: String(saleValue),
-      paymentMethodId: data.paymentMethodId ?? null,
-      notes: data.notes ?? null,
-      date: data.date,
-    }).where(eq(sales.id, id))
+  await db.update(sales).set({
+    ...(data.saleNumber !== undefined ? { saleNumber: data.saleNumber } : {}),
+    productId: data.productId,
+    quantity: data.quantity,
+    effectivePrice: String(data.effectivePrice),
+    saleValue: String(saleValue),
+    totalSale: String(saleValue),
+    totalCost: String(totalCost),
+    netProfit: String(netProfit),
+    grossProfit: String(saleValue),
+    paymentMethodId: data.paymentMethodId ?? null,
+    notes: data.notes ?? null,
+    date: data.date,
+  }).where(eq(sales.id, id))
 
-    // Decrement new product stock
-    await tx.update(products)
-      .set({ stock: sql`${products.stock} - ${data.quantity}`, updatedAt: new Date() })
-      .where(eq(products.id, data.productId))
-  })
+  await db.update(products)
+    .set({ stock: sql`${products.stock} - ${data.quantity}`, updatedAt: new Date() })
+    .where(eq(products.id, data.productId))
 
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')
-  } catch (err) {
-    if (err instanceof Error) throw err
-    throw new Error('Error inesperado al actualizar la venta')
-  }
 }
 
 export async function deleteSale(id: number) {
   const existing = await db.select().from(sales).where(eq(sales.id, id)).limit(1)
   if (!existing[0]) throw new Error('Venta no encontrada')
 
-  await db.transaction(async (tx) => {
-    await tx.update(products)
-      .set({ stock: sql`${products.stock} + ${existing[0].quantity}`, updatedAt: new Date() })
-      .where(eq(products.id, existing[0].productId))
-    await tx.delete(sales).where(eq(sales.id, id))
-  })
+  await db.update(products)
+    .set({ stock: sql`${products.stock} + ${existing[0].quantity}`, updatedAt: new Date() })
+    .where(eq(products.id, existing[0].productId))
+  await db.delete(sales).where(eq(sales.id, id))
 
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')

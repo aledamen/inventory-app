@@ -33,25 +33,25 @@ export async function getAnalyticsSummary(from?: string, to?: string) {
   const [salesRow, expensesRow] = await Promise.all([
     db.select({
       totalRevenue: sql<string>`coalesce(sum(${sales.totalSale}), 0)`,
-      totalNetProfit: sql<string>`coalesce(sum(${sales.netProfit}), 0)`,
-      totalGrossProfit: sql<string>`coalesce(sum(${sales.grossProfit}), 0)`,
+      totalNetProfitStored: sql<string>`coalesce(sum(${sales.netProfit}), 0)`,
       totalCost: sql<string>`coalesce(sum(${sales.totalCost}), 0)`,
       totalUnits: sql<number>`coalesce(sum(${sales.quantity}), 0)`,
-      txCount: sql<number>`count(*)`,
+      txCount: sql<number>`count(distinct ${sales.saleNumber})`,
       avgMargin: sql<string>`coalesce(sum(${sales.netProfit}) / nullif(sum(${sales.totalSale}), 0), 0)`,
     }).from(sales).where(where),
     db.select({ total: sql<string>`coalesce(sum(${expenses.total}), 0)` }).from(expenses).where(expensesWhere),
   ])
 
   const rev = Number(salesRow[0]?.totalRevenue ?? 0)
-  const grossProfit = Number(salesRow[0]?.totalRevenue ?? 0) - Number(salesRow[0]?.totalCost ?? 0)
+  const storedNetProfit = Number(salesRow[0]?.totalNetProfitStored ?? 0)
+  const grossProfit = rev - Number(salesRow[0]?.totalCost ?? 0)
   const totalExp = Number(expensesRow[0]?.total ?? 0)
 
   return {
     totalRevenue: rev,
     totalGrossProfit: grossProfit,
     totalExpenses: totalExp,
-    totalNetProfit: grossProfit - totalExp,
+    totalNetProfit: storedNetProfit - totalExp,
     avgMargin: Number(salesRow[0]?.avgMargin ?? 0),
     totalUnits: Number(salesRow[0]?.totalUnits ?? 0),
     txCount: Number(salesRow[0]?.txCount ?? 0),
@@ -107,7 +107,7 @@ export async function getSalesByPeriod(groupBy: PeriodGroup, from?: string, to?:
       coalesce(sum(total_sale), 0)           AS revenue,
       coalesce(sum(net_profit), 0)           AS profit,
       coalesce(sum(quantity), 0)             AS units,
-      count(*)                               AS tx_count,
+      count(distinct sale_number)            AS tx_count,
       coalesce(sum(net_profit) / nullif(sum(total_sale), 0), 0) AS avg_margin
     FROM sales
     ${whereClause}
