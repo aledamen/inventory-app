@@ -103,7 +103,7 @@ export function StockTable({ movements, products, lookups }: Props) {
         onChange={e => setSearch(e.target.value)}
         className="max-w-sm"
       />
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

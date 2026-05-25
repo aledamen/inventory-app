@@ -97,7 +97,7 @@ export function ExpensesTable({ expenses }: { expenses: Expense[] }) {
   return (
     <div className="space-y-4">
       <Input placeholder="Buscar por tipo..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-sm" />
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

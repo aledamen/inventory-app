@@ -49,7 +49,7 @@ export function SummaryTab({ summary, expensesByType }: Props) {
       {expensesByType.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold mb-3">Gastos por tipo</h3>
-          <div className="bg-card rounded-xl border border-border overflow-hidden">
+          <div className="bg-card rounded-xl border border-border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

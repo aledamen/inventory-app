@@ -87,17 +87,17 @@ export function AnalyticsClient({ from, to, summary, ranking, byDay, byWeek, byM
             {p.label}
           </Button>
         ))}
-        <div className="flex items-center gap-2 ml-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Input
             type="date"
-            className="h-8 w-36 text-sm"
+            className="h-8 flex-1 sm:w-36 sm:flex-none text-sm"
             value={from ?? ''}
             onChange={e => applyRange(e.target.value || undefined, to)}
           />
-          <span className="text-muted-foreground text-sm">→</span>
+          <span className="text-muted-foreground text-sm shrink-0">→</span>
           <Input
             type="date"
-            className="h-8 w-36 text-sm"
+            className="h-8 flex-1 sm:w-36 sm:flex-none text-sm"
             value={to ?? ''}
             onChange={e => applyRange(from, e.target.value || undefined)}
           />
@@ -106,13 +106,15 @@ export function AnalyticsClient({ from, to, summary, ranking, byDay, byWeek, byM
 
       {/* Tabs */}
       <Tabs defaultValue="summary">
-        <TabsList>
-          <TabsTrigger value="summary">Resumen</TabsTrigger>
-          <TabsTrigger value="ranking">Ranking productos</TabsTrigger>
-          <TabsTrigger value="period">Ventas por período</TabsTrigger>
-          <TabsTrigger value="inventory">Inventario</TabsTrigger>
-          <TabsTrigger value="stock">Entradas de stock</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto pb-1">
+          <TabsList className="w-max">
+            <TabsTrigger value="summary">Resumen</TabsTrigger>
+            <TabsTrigger value="ranking">Ranking</TabsTrigger>
+            <TabsTrigger value="period">Por período</TabsTrigger>
+            <TabsTrigger value="inventory">Inventario</TabsTrigger>
+            <TabsTrigger value="stock">Entradas</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="summary" className="mt-5">
           <SummaryTab summary={summary} expensesByType={expensesByType} />
