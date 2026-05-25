@@ -51,11 +51,11 @@ export async function GET() {
   }> = {}
 
   for (const row of rows) {
-    const key = `${row.name}__${row.brand ?? ''}`
+    const key = `${row.name}__${row.brand ?? ''}__${row.weightG ?? ''}`
     if (!grouped[key]) {
       grouped[key] = {
         id: key,
-        name: row.name,
+        name: row.weightG ? `${row.name} ${row.weightG}g` : row.name,
         brand: row.brand,
         category: row.category,
         image: row.imageUrl,
