@@ -7,16 +7,24 @@ import { revalidatePath } from 'next/cache'
 
 const DEFAULTS: Record<string, string> = {
   store_name: 'Fase-Beta',
-  accent_color: '#6366f1',
-  accent_deep_color: '#4f46e5',
+  accent_color: '#2CC8E0',
+  accent_deep_color: '#169FB6',
+  hero_overline: 'Catálogo completo',
   hero_title: 'Todo lo que necesitás.',
   hero_subtitle: 'Elegí los productos, armá tu carrito y enviá el pedido por WhatsApp en segundos.',
   announcement_enabled: 'false',
   announcement_text: '',
-  announcement_bg: '#6366f1',
+  announcement_bg: '#2CC8E0',
   announcement_text_color: '#ffffff',
   whatsapp_number: '',
   instagram_handle: '',
+  header_bg: '#ffffff',
+  header_text_color: '#0A0A0A',
+  nav_catalogo_label: 'Catálogo',
+  nav_carrito_label: 'Carrito',
+  nav_checkout_label: 'Checkout',
+  logo_url: '',
+  logo_width: '340',
 }
 
 export async function getSiteConfig(): Promise<Record<string, string>> {

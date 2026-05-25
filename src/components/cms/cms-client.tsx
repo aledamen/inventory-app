@@ -806,14 +806,22 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
   const [storeName, setStoreName] = useState(config.store_name ?? 'Fase-Beta')
   const [whatsapp, setWhatsapp] = useState(config.whatsapp_number ?? '')
   const [instagram, setInstagram] = useState(config.instagram_handle ?? '')
-  const [accentColor, setAccentColor] = useState(config.accent_color ?? '#6366f1')
-  const [accentDeepColor, setAccentDeepColor] = useState(config.accent_deep_color ?? '#4f46e5')
+  const [accentColor, setAccentColor] = useState(config.accent_color ?? '#2CC8E0')
+  const [accentDeepColor, setAccentDeepColor] = useState(config.accent_deep_color ?? '#169FB6')
+  const [heroOverline, setHeroOverline] = useState(config.hero_overline ?? '')
   const [heroTitle, setHeroTitle] = useState(config.hero_title ?? '')
   const [heroSubtitle, setHeroSubtitle] = useState(config.hero_subtitle ?? '')
+  const [logoUrl, setLogoUrl] = useState(config.logo_url ?? '')
+  const [logoWidth, setLogoWidth] = useState(config.logo_width ?? '340')
   const [announcementEnabled, setAnnouncementEnabled] = useState(config.announcement_enabled === 'true')
   const [announcementText, setAnnouncementText] = useState(config.announcement_text ?? '')
-  const [announcementBg, setAnnouncementBg] = useState(config.announcement_bg ?? '#6366f1')
+  const [announcementBg, setAnnouncementBg] = useState(config.announcement_bg ?? '#2CC8E0')
   const [announcementTextColor, setAnnouncementTextColor] = useState(config.announcement_text_color ?? '#ffffff')
+  const [headerBg, setHeaderBg] = useState(config.header_bg ?? '#ffffff')
+  const [headerTextColor, setHeaderTextColor] = useState(config.header_text_color ?? '#0A0A0A')
+  const [navCatalogoLabel, setNavCatalogoLabel] = useState(config.nav_catalogo_label ?? 'Catálogo')
+  const [navCarritoLabel, setNavCarritoLabel] = useState(config.nav_carrito_label ?? 'Carrito')
+  const [navCheckoutLabel, setNavCheckoutLabel] = useState(config.nav_checkout_label ?? 'Checkout')
 
   async function handleSave() {
     setLoading(true)
@@ -824,12 +832,20 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
         instagram_handle: instagram,
         accent_color: accentColor,
         accent_deep_color: accentDeepColor,
+        hero_overline: heroOverline,
         hero_title: heroTitle,
         hero_subtitle: heroSubtitle,
+        logo_url: logoUrl,
+        logo_width: logoWidth,
         announcement_enabled: announcementEnabled ? 'true' : 'false',
         announcement_text: announcementText,
         announcement_bg: announcementBg,
         announcement_text_color: announcementTextColor,
+        header_bg: headerBg,
+        header_text_color: headerTextColor,
+        nav_catalogo_label: navCatalogoLabel,
+        nav_carrito_label: navCarritoLabel,
+        nav_checkout_label: navCheckoutLabel,
       })
       toast.success('Configuración guardada')
       router.refresh()
@@ -919,10 +935,72 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
         </div>
       </div>
 
+      {/* Header */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Header</h3>
+        <div className="space-y-4 bg-card rounded-xl border border-border p-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Fondo del header</Label>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="color"
+                  value={headerBg}
+                  onChange={e => setHeaderBg(e.target.value)}
+                  className="h-9 w-12 cursor-pointer rounded border border-border bg-transparent p-0.5"
+                />
+                <Input value={headerBg} onChange={e => setHeaderBg(e.target.value)} className="font-mono text-sm" maxLength={7} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Color de texto</Label>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="color"
+                  value={headerTextColor}
+                  onChange={e => setHeaderTextColor(e.target.value)}
+                  className="h-9 w-12 cursor-pointer rounded border border-border bg-transparent p-0.5"
+                />
+                <Input value={headerTextColor} onChange={e => setHeaderTextColor(e.target.value)} className="font-mono text-sm" maxLength={7} />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label>Sección 1</Label>
+              <Input value={navCatalogoLabel} onChange={e => setNavCatalogoLabel(e.target.value)} placeholder="Catálogo" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Sección 2</Label>
+              <Input value={navCarritoLabel} onChange={e => setNavCarritoLabel(e.target.value)} placeholder="Carrito" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Sección 3</Label>
+              <Input value={navCheckoutLabel} onChange={e => setNavCheckoutLabel(e.target.value)} placeholder="Checkout" />
+            </div>
+          </div>
+          <div
+            className="flex items-center justify-between px-4 py-3 rounded-lg border border-border text-sm"
+            style={{ backgroundColor: headerBg, color: headerTextColor }}
+          >
+            <span className="font-semibold">Fase-Beta</span>
+            <div className="flex gap-4">
+              <span>{navCatalogoLabel}</span>
+              <span>{navCarritoLabel}</span>
+              <span>{navCheckoutLabel}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Hero */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Hero</h3>
         <div className="space-y-3 bg-card rounded-xl border border-border p-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="hero-overline">Texto superior (overline)</Label>
+            <Input id="hero-overline" value={heroOverline} onChange={e => setHeroOverline(e.target.value)} placeholder="Catálogo completo" />
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="hero-title">Título principal</Label>
             <Input id="hero-title" value={heroTitle} onChange={e => setHeroTitle(e.target.value)} />
@@ -935,6 +1013,34 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
               onChange={e => setHeroSubtitle(e.target.value)}
               rows={2}
               className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Logo */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Logo</h3>
+        <div className="space-y-3 bg-card rounded-xl border border-border p-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="logo-url">URL del logo</Label>
+            <Input
+              id="logo-url"
+              value={logoUrl}
+              onChange={e => setLogoUrl(e.target.value)}
+              placeholder="https://... (vacío = imagen por defecto)"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="logo-width">Ancho máximo (px)</Label>
+            <Input
+              id="logo-width"
+              type="number"
+              value={logoWidth}
+              onChange={e => setLogoWidth(e.target.value)}
+              min="100"
+              max="600"
+              placeholder="340"
             />
           </div>
         </div>

@@ -97,6 +97,7 @@ export async function updateSale(id: number, data: {
   notes?: string
   date: Date
 }) {
+  try {
   const existing = await db.select().from(sales).where(eq(sales.id, id)).limit(1)
   if (!existing[0]) throw new Error('Venta no encontrada')
   const old = existing[0]
@@ -148,6 +149,10 @@ export async function updateSale(id: number, data: {
 
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')
+  } catch (err) {
+    if (err instanceof Error) throw err
+    throw new Error('Error inesperado al actualizar la venta')
+  }
 }
 
 export async function deleteSale(id: number) {

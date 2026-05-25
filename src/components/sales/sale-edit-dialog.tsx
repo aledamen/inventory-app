@@ -59,8 +59,10 @@ export function SaleEditDialog({ sale, products, lookups }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
-        <Pencil className="h-3.5 w-3.5" />
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>

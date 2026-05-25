@@ -38,13 +38,13 @@ export async function getAnalyticsSummary(from?: string, to?: string) {
       totalCost: sql<string>`coalesce(sum(${sales.totalCost}), 0)`,
       totalUnits: sql<number>`coalesce(sum(${sales.quantity}), 0)`,
       txCount: sql<number>`count(*)`,
-      avgMargin: sql<string>`coalesce(avg(${sales.netProfit} / nullif(${sales.totalSale}, 0)), 0)`,
+      avgMargin: sql<string>`coalesce(sum(${sales.netProfit}) / nullif(sum(${sales.totalSale}), 0), 0)`,
     }).from(sales).where(where),
     db.select({ total: sql<string>`coalesce(sum(${expenses.total}), 0)` }).from(expenses).where(expensesWhere),
   ])
 
   const rev = Number(salesRow[0]?.totalRevenue ?? 0)
-  const grossProfit = Number(salesRow[0]?.totalNetProfit ?? 0)
+  const grossProfit = Number(salesRow[0]?.totalRevenue ?? 0) - Number(salesRow[0]?.totalCost ?? 0)
   const totalExp = Number(expensesRow[0]?.total ?? 0)
 
   return {
@@ -76,7 +76,7 @@ export async function getSalesRanking(from?: string, to?: string) {
     totalRevenue: sql<string>`sum(${sales.totalSale})`,
     totalProfit: sql<string>`sum(${sales.netProfit})`,
     txCount: sql<number>`count(*)`,
-    avgMargin: sql<string>`avg(${sales.netProfit} / nullif(${sales.totalSale}, 0))`,
+    avgMargin: sql<string>`sum(${sales.netProfit}) / nullif(sum(${sales.totalSale}), 0)`,
   })
     .from(sales)
     .innerJoin(products, eq(sales.productId, products.id))
@@ -108,7 +108,7 @@ export async function getSalesByPeriod(groupBy: PeriodGroup, from?: string, to?:
       coalesce(sum(net_profit), 0)           AS profit,
       coalesce(sum(quantity), 0)             AS units,
       count(*)                               AS tx_count,
-      coalesce(avg(net_profit / nullif(total_sale, 0)), 0) AS avg_margin
+      coalesce(sum(net_profit) / nullif(sum(total_sale), 0), 0) AS avg_margin
     FROM sales
     ${whereClause}
     GROUP BY 1

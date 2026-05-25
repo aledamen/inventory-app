@@ -26,7 +26,7 @@ type SortField = 'sku' | 'name' | 'brand' | 'cost' | 'stock'
 
 function stockBadge(stock: number, min: number | null) {
   if (stock === 0) return <Badge variant="destructive">Sin stock</Badge>
-  if (min && stock <= min) return <Badge variant="outline" className="border-orange-400 text-orange-600">⚠ Bajo</Badge>
+  if (min && stock <= min) return <Badge variant="outline" className="border-orange-400 text-orange-600">⚠ {stock} (bajo)</Badge>
   return <Badge variant="secondary" className="text-green-700">{stock}</Badge>
 }
 

@@ -57,7 +57,7 @@ export async function getDashboardStats() {
     stockValueAtPrice,
     potentialProfit: stockValueAtPrice - stockValueAtCost,
     monthlyRevenue: Number(monthlySalesRows[0]?.totalSale ?? 0),
-    monthlyNetProfit: Number(monthlySalesRows[0]?.totalNetProfit ?? 0),
+    monthlyNetProfit: Number(monthlySalesRows[0]?.totalNetProfit ?? 0) - Number(expensesRows[0]?.total ?? 0),
     monthlySalesCount: Number(monthlySalesRows[0]?.count ?? 0),
     monthlyExpenses: Number(expensesRows[0]?.total ?? 0),
     lowStockCount,
