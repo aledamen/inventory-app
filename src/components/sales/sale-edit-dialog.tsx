@@ -39,6 +39,7 @@ export function SaleEditDialog({ sale, products, lookups }: Props) {
 
     try {
       await updateSale(sale.id, {
+        saleNumber: Number(fd.get('saleNumber')),
         productId: Number(productId),
         quantity: Number(fd.get('quantity')),
         effectivePrice: Number(fd.get('effectivePrice')),
@@ -66,6 +67,18 @@ export function SaleEditDialog({ sale, products, lookups }: Props) {
           <DialogTitle>Editar venta #{sale.saleNumber}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-saleNumber">Nº de venta *</Label>
+            <Input
+              id="edit-saleNumber"
+              name="saleNumber"
+              type="number"
+              min="1"
+              defaultValue={sale.saleNumber}
+              required
+            />
+          </div>
+
           <div className="space-y-1.5">
             <Label>Producto *</Label>
             <Select value={productId} onValueChange={v => setProductId(v ?? productId)} required>

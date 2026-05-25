@@ -2,6 +2,8 @@
 
 import { db } from '@/db'
 import { categories, brands, flavors, paymentMethods } from '@/db/schema'
+import { eq } from 'drizzle-orm'
+import { revalidatePath } from 'next/cache'
 
 export async function getAllLookups() {
   const [cats, brnds, flvrs, payments] = await Promise.all([
@@ -11,4 +13,64 @@ export async function getAllLookups() {
     db.select().from(paymentMethods).orderBy(paymentMethods.name),
   ])
   return { categories: cats, brands: brnds, flavors: flvrs, paymentMethods: payments }
+}
+
+// ── Categories ──────────────────────────────────────────
+
+export async function createCategory(name: string) {
+  await db.insert(categories).values({ name })
+  revalidatePath('/dashboard/cms')
+  revalidatePath('/dashboard/products')
+}
+
+export async function updateCategory(id: number, name: string) {
+  await db.update(categories).set({ name }).where(eq(categories.id, id))
+  revalidatePath('/dashboard/cms')
+  revalidatePath('/dashboard/products')
+}
+
+export async function deleteCategory(id: number) {
+  await db.delete(categories).where(eq(categories.id, id))
+  revalidatePath('/dashboard/cms')
+  revalidatePath('/dashboard/products')
+}
+
+// ── Brands ──────────────────────────────────────────────
+
+export async function createBrand(name: string) {
+  await db.insert(brands).values({ name })
+  revalidatePath('/dashboard/cms')
+  revalidatePath('/dashboard/products')
+}
+
+export async function updateBrand(id: number, name: string) {
+  await db.update(brands).set({ name }).where(eq(brands.id, id))
+  revalidatePath('/dashboard/cms')
+  revalidatePath('/dashboard/products')
+}
+
+export async function deleteBrand(id: number) {
+  await db.delete(brands).where(eq(brands.id, id))
+  revalidatePath('/dashboard/cms')
+  revalidatePath('/dashboard/products')
+}
+
+// ── Flavors ─────────────────────────────────────────────
+
+export async function createFlavor(name: string) {
+  await db.insert(flavors).values({ name })
+  revalidatePath('/dashboard/cms')
+  revalidatePath('/dashboard/products')
+}
+
+export async function updateFlavor(id: number, name: string) {
+  await db.update(flavors).set({ name }).where(eq(flavors.id, id))
+  revalidatePath('/dashboard/cms')
+  revalidatePath('/dashboard/products')
+}
+
+export async function deleteFlavor(id: number) {
+  await db.delete(flavors).where(eq(flavors.id, id))
+  revalidatePath('/dashboard/cms')
+  revalidatePath('/dashboard/products')
 }

@@ -70,6 +70,7 @@ export async function createStockMovement(data: {
 }
 
 export async function updateStockMovement(id: number, data: {
+  movementNumber?: number
   productId: number
   quantity: number
   unitCost?: number
@@ -89,6 +90,7 @@ export async function updateStockMovement(id: number, data: {
 
     // Update movement record
     await tx.update(stockMovements).set({
+      ...(data.movementNumber !== undefined ? { movementNumber: data.movementNumber } : {}),
       productId: data.productId,
       quantity: data.quantity,
       unitCost: data.unitCost ? String(data.unitCost) : null,

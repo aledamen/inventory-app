@@ -12,9 +12,15 @@ export type ProductWithRelations = {
   notes: string | null
   type: string | null
   bagAssigned: string | null
+  description: string | null
+  badge: string | null
+  featured: boolean
   category: string | null
   brand: string | null
   updatedAt: Date | null
+  bannerName: string | null
+  bannerColor: string | null
+  bannerId: number | null
 }
 
 export type StockMovementWithProduct = {

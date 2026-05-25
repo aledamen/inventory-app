@@ -19,7 +19,7 @@ import { toast } from 'sonner'
 
 type Props = {
   products: ProductWithRelations[]
-  lookups: { categories: {id:number,name:string}[], brands: {id:number,name:string}[], flavors: {id:number,name:string}[] }
+  lookups: { categories: {id:number,name:string}[], brands: {id:number,name:string}[], flavors: {id:number,name:string}[], banners: {id:number,name:string,color:string}[] }
 }
 
 type SortField = 'sku' | 'name' | 'brand' | 'cost' | 'stock'

@@ -23,6 +23,7 @@ type Lookups = {
   categories: {id:number,name:string}[]
   brands: {id:number,name:string}[]
   flavors: {id:number,name:string}[]
+  banners: {id:number,name:string,color:string}[]
 }
 
 type Props = {
@@ -38,6 +39,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
   const [uploading, setUploading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(product?.imageUrl ?? null)
   const [dragOver, setDragOver] = useState(false)
+  const [bannerId, setBannerId] = useState<string>(product?.bannerId ? String(product.bannerId) : '')
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -55,6 +57,10 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
       stockMin: fd.get('stockMin') ? Number(fd.get('stockMin')) : undefined,
       type: fd.get('type') as string || 'estandar',
       notes: fd.get('notes') as string || undefined,
+      description: fd.get('description') as string || undefined,
+      badge: fd.get('badge') as string || undefined,
+      featured: fd.get('featured') === 'on',
+      bannerId: bannerId ? Number(bannerId) : null,
     }
     try {
       if (mode === 'edit' && product) {
@@ -208,7 +214,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="sku">SKU *</Label>
-              <Input id="sku" name="sku" required defaultValue={product?.sku} disabled={mode === 'edit'} />
+              <Input id="sku" name="sku" required defaultValue={product?.sku} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cost">Costo *</Label>
@@ -272,6 +278,44 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
           <div className="space-y-1.5">
             <Label htmlFor="notes">Notas</Label>
             <Textarea id="notes" name="notes" rows={2} defaultValue={product?.notes ?? ''} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="description">Descripción (catálogo)</Label>
+            <Textarea id="description" name="description" rows={2} defaultValue={product?.description ?? ''} />
+          </div>
+
+          {mode === 'edit' && (
+            <div className="space-y-1.5">
+              <Label>Banner</Label>
+              <Select value={bannerId} onValueChange={v => setBannerId(v ?? '')}>
+                <SelectTrigger><SelectValue placeholder="Sin banner" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin banner</SelectItem>
+                  {lookups.banners.map(b => (
+                    <SelectItem key={b.id} value={String(b.id)}>
+                      <span className="flex items-center gap-2">
+                        <span style={{ backgroundColor: b.color }} className="inline-block w-3 h-3 rounded-full" />
+                        {b.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="badge">Badge</Label>
+              <Input id="badge" name="badge" placeholder="Nuevo, Promo, Limitado..." defaultValue={product?.badge ?? ''} />
+            </div>
+            <div className="space-y-1.5 flex flex-col justify-end">
+              <Label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="featured" defaultChecked={product?.featured ?? false} className="h-4 w-4" />
+                Destacado en catálogo
+              </Label>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

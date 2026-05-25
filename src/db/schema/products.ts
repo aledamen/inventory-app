@@ -1,5 +1,6 @@
-import { pgTable, serial, text, integer, numeric, boolean, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, integer, numeric, boolean, timestamp, varchar } from 'drizzle-orm/pg-core'
 import { categories, brands, flavors } from './lookups'
+import { banners } from './banners'
 
 export const products = pgTable('products', {
   id: serial('id').primaryKey(),
@@ -17,6 +18,10 @@ export const products = pgTable('products', {
   imageUrl: text('image_url'),
   visible: boolean('visible').default(false),
   notes: text('notes'),
+  description: text('description'),
+  badge: varchar('badge', { length: 50 }),
+  featured: boolean('featured').default(false).notNull(),
+  bannerId: integer('banner_id').references(() => banners.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 })

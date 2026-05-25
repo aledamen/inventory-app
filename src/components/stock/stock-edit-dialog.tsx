@@ -39,6 +39,7 @@ export function StockEditDialog({ movement, products, lookups }: Props) {
 
     try {
       await updateStockMovement(movement.id, {
+        movementNumber: Number(fd.get('movementNumber')),
         productId: Number(productId),
         quantity: Number(fd.get('quantity')),
         unitCost: fd.get('unitCost') ? Number(fd.get('unitCost')) : undefined,
@@ -66,6 +67,18 @@ export function StockEditDialog({ movement, products, lookups }: Props) {
           <DialogTitle>Editar entrada #{movement.movementNumber}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-movementNumber">Nº de entrada *</Label>
+            <Input
+              id="edit-movementNumber"
+              name="movementNumber"
+              type="number"
+              min="1"
+              defaultValue={movement.movementNumber}
+              required
+            />
+          </div>
+
           <div className="space-y-1.5">
             <Label>Producto *</Label>
             <Select value={productId} onValueChange={v => setProductId(v ?? productId)} required>

@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/db'
-import { products, categories, brands, flavors } from '@/db/schema'
+import { products, categories, brands, flavors, banners } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
@@ -21,24 +21,32 @@ export async function getProducts() {
       notes: products.notes,
       type: products.type,
       bagAssigned: products.bagAssigned,
+      description: products.description,
+      badge: products.badge,
+      featured: products.featured,
       category: categories.name,
       brand: brands.name,
       updatedAt: products.updatedAt,
+      bannerName: banners.name,
+      bannerColor: banners.color,
+      bannerId: products.bannerId,
     })
     .from(products)
     .leftJoin(categories, eq(products.categoryId, categories.id))
     .leftJoin(brands, eq(products.brandId, brands.id))
     .leftJoin(flavors, eq(products.flavorId, flavors.id))
+    .leftJoin(banners, eq(products.bannerId, banners.id))
     .orderBy(products.name)
 }
 
 export async function getLookups() {
-  const [cats, brnds, flvrs] = await Promise.all([
+  const [cats, brnds, flvrs, bnnrs] = await Promise.all([
     db.select().from(categories).orderBy(categories.name),
     db.select().from(brands).orderBy(brands.name),
     db.select().from(flavors).orderBy(flavors.name),
+    db.select().from(banners).orderBy(banners.name),
   ])
-  return { categories: cats, brands: brnds, flavors: flvrs }
+  return { categories: cats, brands: brnds, flavors: flvrs, banners: bnnrs }
 }
 
 export async function createProduct(data: {
@@ -63,6 +71,7 @@ export async function createProduct(data: {
 }
 
 export async function updateProduct(id: number, data: Partial<{
+  sku: string
   name: string
   cost: number
   categoryId: number
@@ -75,6 +84,10 @@ export async function updateProduct(id: number, data: Partial<{
   notes: string
   visible: boolean
   imageUrl: string
+  description: string
+  badge: string | null
+  featured: boolean
+  bannerId: number | null
 }>) {
   const { cost, ...rest } = data
   await db.update(products).set({

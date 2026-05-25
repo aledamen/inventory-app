@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -67,6 +67,11 @@ export function StockTable({ movements, products, lookups }: Props) {
     return rows
   }, [movements, search, sortField, sortDir])
 
+  const totals = useMemo(() => ({
+    quantity: filtered.reduce((s, m) => s + m.quantity, 0),
+    total: filtered.reduce((s, m) => s + Number(m.total ?? 0), 0),
+  }), [filtered])
+
   async function handleDelete(id: number, num: number) {
     if (!confirm(`¿Eliminar entrada #${num}? Se ajustará el stock.`)) return
     try {
@@ -127,7 +132,7 @@ export function StockTable({ movements, products, lookups }: Props) {
                 </TableCell>
               </TableRow>
             )}
-            {filtered.map(m => (
+            {filtered.map((m) => (
               <TableRow key={m.id}>
                 <TableCell className="text-muted-foreground">{m.movementNumber}</TableCell>
                 <TableCell>{new Date(m.date).toLocaleDateString('es-AR')}</TableCell>
@@ -161,6 +166,21 @@ export function StockTable({ movements, products, lookups }: Props) {
               </TableRow>
             ))}
           </TableBody>
+          {filtered.length > 0 && (
+            <TableFooter>
+              <TableRow>
+                <TableCell colSpan={4} className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">
+                  Total ({filtered.length} entradas)
+                </TableCell>
+                <TableCell className="text-right font-semibold">{totals.quantity}</TableCell>
+                <TableCell />
+                <TableCell className="text-right font-semibold">
+                  ${totals.total.toLocaleString('es-AR')}
+                </TableCell>
+                <TableCell colSpan={3} />
+              </TableRow>
+            </TableFooter>
+          )}
         </Table>
       </div>
     </div>

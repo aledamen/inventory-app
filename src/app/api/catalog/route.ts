@@ -1,36 +1,78 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/db'
-import { products, pricing, categories, brands, flavors } from '@/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { products, pricing, categories, brands, flavors, sales, promotions, combos, comboItems, banners } from '@/db/schema'
+import { eq, and, or, isNull, gte, inArray } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 
 export const revalidate = 60
 
 export async function GET() {
-  const rows = await db
-    .select({
-      id: products.id,
-      sku: products.sku,
-      name: products.name,
-      brand: brands.name,
-      category: categories.name,
-      flavor: flavors.name,
-      stock: products.stock,
-      visible: products.visible,
-      imageUrl: products.imageUrl,
-      weightG: products.weightG,
-      priceCashRounded: pricing.priceCashRounded,
-      priceTransferRounded: pricing.priceTransferRounded,
-      priceListRounded: pricing.priceListRounded,
-    })
-    .from(products)
-    .leftJoin(pricing, eq(products.id, pricing.productId))
-    .leftJoin(brands, eq(products.brandId, brands.id))
-    .leftJoin(categories, eq(products.categoryId, categories.id))
-    .leftJoin(flavors, eq(products.flavorId, flavors.id))
-    .where(eq(products.visible, true))
+  const [rows, salesRows, promoRows] = await Promise.all([
+    db
+      .select({
+        id: products.id,
+        sku: products.sku,
+        name: products.name,
+        brand: brands.name,
+        category: categories.name,
+        flavor: flavors.name,
+        stock: products.stock,
+        visible: products.visible,
+        imageUrl: products.imageUrl,
+        weightG: products.weightG,
+        description: products.description,
+        badge: products.badge,
+        featured: products.featured,
+        priceCashRounded: pricing.priceCashRounded,
+        priceTransferRounded: pricing.priceTransferRounded,
+        priceListRounded: pricing.priceListRounded,
+        bannerName: banners.name,
+        bannerColor: banners.color,
+        bannerTextColor: banners.textColor,
+        bannerPosition: banners.position,
+      })
+      .from(products)
+      .leftJoin(pricing, eq(products.id, pricing.productId))
+      .leftJoin(brands, eq(products.brandId, brands.id))
+      .leftJoin(categories, eq(products.categoryId, categories.id))
+      .leftJoin(flavors, eq(products.flavorId, flavors.id))
+      .leftJoin(banners, eq(products.bannerId, banners.id))
+      .where(eq(products.visible, true)),
 
-  // Group by name+brand to create product groups with variants
+    db
+      .select({
+        productId: sales.productId,
+        totalSold: sql<number>`coalesce(sum(${sales.quantity}), 0)`,
+      })
+      .from(sales)
+      .groupBy(sales.productId),
+
+    db
+      .select({
+        productId: promotions.productId,
+        promoPrice: promotions.promoPrice,
+        label: promotions.label,
+      })
+      .from(promotions)
+      .where(
+        and(
+          eq(promotions.active, true),
+          or(isNull(promotions.validTo), gte(promotions.validTo, sql`CURRENT_DATE`))
+        )
+      ),
+  ])
+
+  // Build productId → totalSold map
+  const soldByProduct = new Map<number, number>()
+  for (const s of salesRows) soldByProduct.set(s.productId, Number(s.totalSold))
+
+  // Build productId → promo map (active promotions, not expired)
+  const promoByProduct = new Map<number, { promoPrice: string | null; promoLabel: string | null }>()
+  for (const promo of promoRows) {
+    promoByProduct.set(promo.productId, { promoPrice: promo.promoPrice, promoLabel: promo.label })
+  }
+
+  // Group by name+brand+weight
   const grouped: Record<string, {
     id: string
     name: string
@@ -38,6 +80,14 @@ export async function GET() {
     category: string | null
     image: string | null
     visible: boolean
+    salesCount: number
+    description: string | null
+    badge: string | null
+    featured: boolean
+    bannerName: string | null
+    bannerColor: string | null
+    bannerTextColor: string | null
+    bannerPosition: string | null
     variants: {
       sku: string
       flavor: string | null
@@ -47,6 +97,8 @@ export async function GET() {
       priceTransfer: number | null
       priceList: number | null
       image: string | null
+      promoPrice: number | null
+      promoLabel: string | null
     }[]
   }> = {}
 
@@ -60,9 +112,19 @@ export async function GET() {
         category: row.category,
         image: row.imageUrl,
         visible: row.visible ?? false,
+        salesCount: 0,
+        description: row.description ?? null,
+        badge: row.badge ?? null,
+        featured: row.featured ?? false,
+        bannerName: row.bannerName ?? null,
+        bannerColor: row.bannerColor ?? null,
+        bannerTextColor: row.bannerTextColor ?? null,
+        bannerPosition: row.bannerPosition ?? null,
         variants: [],
       }
     }
+    const promo = promoByProduct.get(row.id)
+    grouped[key].salesCount += soldByProduct.get(row.id) ?? 0
     grouped[key].variants.push({
       sku: row.sku,
       flavor: row.flavor,
@@ -72,14 +134,108 @@ export async function GET() {
       priceTransfer: row.priceTransferRounded,
       priceList: row.priceListRounded,
       image: row.imageUrl,
+      promoPrice: promo ? Number(promo.promoPrice) : null,
+      promoLabel: promo?.promoLabel ?? null,
     })
   }
 
+  // Fetch visible combos and compute their stock
+  const visibleCombos = await db
+    .select({
+      id: combos.id,
+      sku: combos.sku,
+      name: combos.name,
+      description: combos.description,
+      badge: combos.badge,
+      featured: combos.featured,
+      visible: combos.visible,
+      imageUrl: combos.imageUrl,
+      priceEffective: combos.priceEffective,
+      priceTransfer: combos.priceTransfer,
+      priceList: combos.priceList,
+      notes: combos.notes,
+      bannerId: combos.bannerId,
+      bannerName: banners.name,
+      bannerColor: banners.color,
+      bannerTextColor: banners.textColor,
+      bannerPosition: banners.position,
+      createdAt: combos.createdAt,
+      updatedAt: combos.updatedAt,
+    })
+    .from(combos)
+    .leftJoin(banners, eq(combos.bannerId, banners.id))
+    .where(eq(combos.visible, true))
+
+  // Build combo stock map
+  const comboStockMap = new Map<number, number>()
+  if (visibleCombos.length > 0) {
+    const comboIds = visibleCombos.map(c => c.id)
+    const comboItemRows = await db
+      .select({
+        comboId: comboItems.comboId,
+        quantity: comboItems.quantity,
+        stock: products.stock,
+      })
+      .from(comboItems)
+      .innerJoin(products, eq(comboItems.productId, products.id))
+      .where(inArray(comboItems.comboId, comboIds))
+
+    // Group by comboId, compute min(floor(stock/quantity))
+    const itemsByCombo = new Map<number, { stock: number; quantity: number }[]>()
+    for (const row of comboItemRows) {
+      const list = itemsByCombo.get(row.comboId) ?? []
+      list.push({ stock: row.stock, quantity: row.quantity })
+      itemsByCombo.set(row.comboId, list)
+    }
+    for (const [cId, cItems] of itemsByCombo) {
+      const stock = cItems.length === 0 ? 0 : Math.min(...cItems.map(i => Math.floor(i.stock / i.quantity)))
+      comboStockMap.set(cId, stock)
+    }
+  }
+
+  // Default sort: featured first, then stock, then by salesCount desc
   const data = Object.values(grouped).sort((a, b) => {
-    const stockA = a.variants.reduce((s, v) => s + v.stock, 0)
-    const stockB = b.variants.reduce((s, v) => s + v.stock, 0)
-    return stockB - stockA
+    if (a.featured && !b.featured) return -1
+    if (!a.featured && b.featured) return 1
+    const aHasStock = a.variants.some(v => v.stock > 0)
+    const bHasStock = b.variants.some(v => v.stock > 0)
+    if (aHasStock && !bHasStock) return -1
+    if (!aHasStock && bHasStock) return 1
+    return b.salesCount - a.salesCount
   })
+
+  // Append visible combos
+  for (const combo of visibleCombos) {
+    const comboStock = comboStockMap.get(combo.id) ?? 0
+    data.push({
+      id: `combo__${combo.sku}`,
+      name: combo.name,
+      brand: 'Combo',
+      category: 'Combos',
+      image: combo.imageUrl,
+      visible: true,
+      salesCount: 0,
+      description: combo.description,
+      badge: combo.badge ?? 'Combo',
+      featured: combo.featured,
+      bannerName: combo.bannerName ?? null,
+      bannerColor: combo.bannerColor ?? null,
+      bannerTextColor: combo.bannerTextColor ?? null,
+      bannerPosition: combo.bannerPosition ?? null,
+      variants: [{
+        sku: combo.sku,
+        flavor: null,
+        stock: comboStock,
+        weightG: null,
+        priceEffective: Number(combo.priceEffective),
+        priceTransfer: Number(combo.priceTransfer ?? combo.priceEffective),
+        priceList: Number(combo.priceList ?? combo.priceEffective),
+        image: combo.imageUrl,
+        promoPrice: null,
+        promoLabel: null,
+      }],
+    })
+  }
 
   return NextResponse.json(data, {
     headers: {

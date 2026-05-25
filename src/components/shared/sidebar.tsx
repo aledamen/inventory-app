@@ -21,6 +21,9 @@ import {
   ClipboardList,
   Menu,
   X,
+  Store,
+  PackagePlus,
+  Eye,
 } from 'lucide-react'
 
 const navItems = [
@@ -30,6 +33,7 @@ const navItems = [
   ]},
   { group: 'Inventario', items: [
     { href: '/dashboard/products', label: 'Productos', icon: Package },
+    { href: '/dashboard/combos', label: 'Combos', icon: PackagePlus },
     { href: '/dashboard/stock', label: 'Entradas', icon: ArrowDownToLine },
     { href: '/dashboard/adjustments', label: 'Ajustes', icon: SlidersHorizontal },
     { href: '/dashboard/pricing', label: 'Precios', icon: TrendingUp },
@@ -42,6 +46,10 @@ const navItems = [
   { group: 'CRM', items: [
     { href: '/dashboard/clients', label: 'Clientes', icon: Users },
     { href: '/dashboard/suppliers', label: 'Proveedores', icon: Truck },
+  ]},
+  { group: 'Catálogo', items: [
+    { href: '/dashboard/cms', label: 'CMS', icon: Store },
+    { href: '/dashboard/visitors', label: 'Visitantes', icon: Eye },
   ]},
   { group: 'Finanzas', items: [
     { href: '/dashboard/expenses', label: 'Gastos', icon: Receipt },

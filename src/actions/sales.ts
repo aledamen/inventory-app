@@ -89,6 +89,7 @@ export async function createSale(data: {
 }
 
 export async function updateSale(id: number, data: {
+  saleNumber?: number
   productId: number
   quantity: number
   effectivePrice: number
@@ -125,6 +126,7 @@ export async function updateSale(id: number, data: {
 
     // Update sale record
     await tx.update(sales).set({
+      ...(data.saleNumber !== undefined ? { saleNumber: data.saleNumber } : {}),
       productId: data.productId,
       quantity: data.quantity,
       effectivePrice: String(data.effectivePrice),
