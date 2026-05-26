@@ -25,5 +25,6 @@ export const comboItems = pgTable('combo_items', {
   comboId: integer('combo_id').references(() => combos.id, { onDelete: 'cascade' }).notNull(),
   productId: integer('product_id').references(() => products.id),
   productGroupName: text('product_group_name'),
+  productGroupWeight: integer('product_group_weight'),
   quantity: integer('quantity').default(1).notNull(),
 })

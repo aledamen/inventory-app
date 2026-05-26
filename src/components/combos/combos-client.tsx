@@ -34,6 +34,7 @@ type ItemRow = {
   type: 'fixed' | 'group'
   productId?: number
   productGroupName?: string
+  productGroupWeight?: number
   quantity: number
 }
 
@@ -61,29 +62,55 @@ function ComboFormDialog({
       type: i.productGroupName ? 'group' as const : 'fixed' as const,
       productId: i.productId ?? undefined,
       productGroupName: i.productGroupName ?? undefined,
+      productGroupWeight: i.productGroupWeight ?? undefined,
       quantity: i.quantity,
     })) ?? []
   )
   const [bannerId, setBannerId] = useState<string>(combo?.bannerId ? String(combo.bannerId) : '')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(combo?.imageUrl ?? null)
+  const round10 = (n: number) => Math.ceil(n / 10) * 10
+  const [priceTransfer, setPriceTransfer] = useState(combo?.priceTransfer ? String(round10(Number(combo.priceTransfer))) : '')
+  const [priceList, setPriceList] = useState(combo?.priceList ? String(round10(Number(combo.priceList))) : '')
 
   function resetForm() {
     setItems(combo?.items.map(i => ({
       type: i.productGroupName ? 'group' as const : 'fixed' as const,
       productId: i.productId ?? undefined,
       productGroupName: i.productGroupName ?? undefined,
+      productGroupWeight: i.productGroupWeight ?? undefined,
       quantity: i.quantity,
     })) ?? [])
     setBannerId(combo?.bannerId ? String(combo.bannerId) : '')
     setImageFile(null)
     setImagePreview(combo?.imageUrl ?? null)
+    setPriceTransfer(combo?.priceTransfer ? String(round10(Number(combo.priceTransfer))) : '')
+    setPriceList(combo?.priceList ? String(round10(Number(combo.priceList))) : '')
   }
 
   const productNames = useMemo(() => [...new Set(products.map(p => p.name))].sort(), [products])
+  const weightsForName = useMemo(() => {
+    const map = new Map<string, number[]>()
+    for (const p of products) {
+      if (!p.weightG) continue
+      const ws = map.get(p.name) ?? []
+      if (!ws.includes(p.weightG)) ws.push(p.weightG)
+      map.set(p.name, ws.sort((a, b) => a - b))
+    }
+    return map
+  }, [products])
 
   function addItem() {
+    const firstName = productNames[0]
+    const firstWeight = weightsForName.get(firstName)?.[0]
     setItems(prev => [...prev, { type: 'fixed', productId: products[0]?.id, quantity: 1 }])
+  }
+
+  function handlePriceEffectiveChange(value: string) {
+    const n = Number(value)
+    if (!n) return
+    setPriceTransfer(String(round10(n * 0.75 / 0.71)))
+    setPriceList(String(round10(n * 0.75 / 0.55)))
   }
 
   function updateItem(idx: number, patch: Partial<ItemRow>) {
@@ -115,7 +142,7 @@ function ComboFormDialog({
       bannerId: bannerId ? Number(bannerId) : null,
       items: items.map(item =>
         item.type === 'group'
-          ? { productGroupName: item.productGroupName!, quantity: item.quantity }
+          ? { productGroupName: item.productGroupName!, productGroupWeight: item.productGroupWeight, quantity: item.quantity }
           : { productId: item.productId!, quantity: item.quantity }
       ),
     }
@@ -150,7 +177,7 @@ function ComboFormDialog({
         ? <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}><Pencil className="h-3.5 w-3.5" /></DialogTrigger>
         : <DialogTrigger render={<Button />}><Plus className="h-4 w-4 mr-2" />Nuevo combo</DialogTrigger>
       }
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{mode === 'edit' ? 'Editar combo' : 'Nuevo combo'}</DialogTitle>
         </DialogHeader>
@@ -208,15 +235,27 @@ function ComboFormDialog({
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="priceEffective">Precio efectivo *</Label>
-              <Input id="priceEffective" name="priceEffective" type="number" step="0.01" required defaultValue={combo?.priceEffective} />
+              <Input
+                id="priceEffective" name="priceEffective" type="number" step="1" required
+                defaultValue={combo?.priceEffective}
+                onChange={e => handlePriceEffectiveChange(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="priceTransfer">Precio transferencia</Label>
-              <Input id="priceTransfer" name="priceTransfer" type="number" step="0.01" defaultValue={combo?.priceTransfer ?? ''} />
+              <Input
+                id="priceTransfer" name="priceTransfer" type="number" step="1"
+                value={priceTransfer}
+                onChange={e => setPriceTransfer(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="priceList">Precio lista</Label>
-              <Input id="priceList" name="priceList" type="number" step="0.01" defaultValue={combo?.priceList ?? ''} />
+              <Input
+                id="priceList" name="priceList" type="number" step="1"
+                value={priceList}
+                onChange={e => setPriceList(e.target.value)}
+              />
             </div>
           </div>
 
@@ -234,9 +273,13 @@ function ComboFormDialog({
                     value={item.type}
                     onChange={e => {
                       const t = e.target.value as 'fixed' | 'group'
-                      updateItem(idx, t === 'group'
-                        ? { type: 'group', productId: undefined, productGroupName: productNames[0] }
-                        : { type: 'fixed', productGroupName: undefined, productId: products[0]?.id })
+                      if (t === 'group') {
+                        const firstName = productNames[0]
+                        const firstWeight = weightsForName.get(firstName)?.[0]
+                        updateItem(idx, { type: 'group', productId: undefined, productGroupName: firstName, productGroupWeight: firstWeight })
+                      } else {
+                        updateItem(idx, { type: 'fixed', productGroupName: undefined, productGroupWeight: undefined, productId: products[0]?.id })
+                      }
                     }}
                   >
                     <option value="fixed">Variante fija</option>
@@ -251,20 +294,37 @@ function ComboFormDialog({
                     >
                       {products.map(p => (
                         <option key={p.id} value={p.id}>
-                          {p.name}{p.flavor ? ' · ' + p.flavor : ''} (stock: {p.stock})
+                          {p.name}{p.weightG ? ` ${p.weightG}g` : ''}{p.flavor ? ' · ' + p.flavor : ''} (stock: {p.stock})
                         </option>
                       ))}
                     </select>
                   ) : (
-                    <select
-                      className="flex-1 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                      value={item.productGroupName}
-                      onChange={e => updateItem(idx, { productGroupName: e.target.value })}
-                    >
-                      {productNames.map(name => (
-                        <option key={name} value={name}>{name} (cualquier sabor)</option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        className="flex-1 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                        value={item.productGroupName ?? ''}
+                        onChange={e => {
+                          const name = e.target.value
+                          const firstW = weightsForName.get(name)?.[0]
+                          updateItem(idx, { productGroupName: name, productGroupWeight: firstW })
+                        }}
+                      >
+                        {productNames.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                      {(weightsForName.get(item.productGroupName ?? '')?.length ?? 0) > 0 && (
+                        <select
+                          className="w-24 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                          value={item.productGroupWeight ?? ''}
+                          onChange={e => updateItem(idx, { productGroupWeight: e.target.value ? Number(e.target.value) : undefined })}
+                        >
+                          {weightsForName.get(item.productGroupName ?? '')?.map(w => (
+                            <option key={w} value={w}>{w}g</option>
+                          ))}
+                        </select>
+                      )}
+                    </>
                   )}
 
                   <Input

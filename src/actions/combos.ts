@@ -1,8 +1,8 @@
 'use server'
 
 import { db } from '@/db'
-import { combos, comboItems, products, pricing, flavors, banners } from '@/db/schema'
-import { eq, inArray, sql } from 'drizzle-orm'
+import { combos, comboItems, products, pricing, flavors, banners, sales, paymentMethods } from '@/db/schema'
+import { eq, inArray, sql, or, and } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { put, del } from '@vercel/blob'
 
@@ -31,6 +31,7 @@ export type ComboFull = {
     id: number
     productId: number | null
     productGroupName: string | null
+    productGroupWeight: number | null
     productName: string | null
     productSku: string | null
     productFlavor: string | null
@@ -76,6 +77,7 @@ export async function getCombosFull(): Promise<ComboFull[]> {
       comboId: comboItems.comboId,
       productId: comboItems.productId,
       productGroupName: comboItems.productGroupName,
+      productGroupWeight: comboItems.productGroupWeight,
       quantity: comboItems.quantity,
       productName: products.name,
       productSku: products.sku,
@@ -89,16 +91,21 @@ export async function getCombosFull(): Promise<ComboFull[]> {
     .leftJoin(pricing, eq(products.id, pricing.productId))
     .where(inArray(comboItems.comboId, comboIds))
 
-  // Pre-fetch total stock for group slots
-  const groupNames = [...new Set(itemRows.filter(r => r.productGroupName).map(r => r.productGroupName!))]
+  // Pre-fetch total stock for group slots, keyed by "name||weight"
+  const groupSlots = itemRows.filter(r => r.productGroupName)
   const groupStockMap = new Map<string, number>()
-  if (groupNames.length > 0) {
+  if (groupSlots.length > 0) {
+    const conditions = groupSlots.map(r =>
+      r.productGroupWeight
+        ? and(eq(products.name, r.productGroupName!), eq(products.weightG, r.productGroupWeight))
+        : eq(products.name, r.productGroupName!)
+    )
     const rows = await db
-      .select({ name: products.name, total: sql<number>`sum(${products.stock})` })
+      .select({ name: products.name, weightG: products.weightG, total: sql<number>`sum(${products.stock})` })
       .from(products)
-      .where(inArray(products.name, groupNames))
-      .groupBy(products.name)
-    for (const r of rows) groupStockMap.set(r.name, Number(r.total))
+      .where(or(...conditions))
+      .groupBy(products.name, products.weightG)
+    for (const r of rows) groupStockMap.set(`${r.name}||${r.weightG ?? ''}`, Number(r.total))
   }
 
   // Group items by comboId
@@ -109,12 +116,13 @@ export async function getCombosFull(): Promise<ComboFull[]> {
       id: row.itemId,
       productId: row.productId ?? null,
       productGroupName: row.productGroupName ?? null,
+      productGroupWeight: row.productGroupWeight ?? null,
       productName: row.productName ?? null,
       productSku: row.productSku ?? null,
       productFlavor: row.productFlavor ?? null,
       quantity: row.quantity,
       stock: row.productGroupName
-        ? (groupStockMap.get(row.productGroupName) ?? 0)
+        ? (groupStockMap.get(`${row.productGroupName}||${row.productGroupWeight ?? ''}`) ?? 0)
         : (row.stock ?? 0),
       unitCost: row.unitCost ?? null,
     })
@@ -164,7 +172,7 @@ type ComboInput = {
   priceList?: number
   notes?: string
   bannerId?: number | null
-  items: { productId?: number; productGroupName?: string; quantity: number }[]
+  items: { productId?: number; productGroupName?: string; productGroupWeight?: number; quantity: number }[]
 }
 
 export async function createCombo(data: ComboInput): Promise<{ id: number }> {
@@ -191,6 +199,7 @@ export async function createCombo(data: ComboInput): Promise<{ id: number }> {
         comboId: combo.id,
         productId: item.productId ?? null,
         productGroupName: item.productGroupName ?? null,
+        productGroupWeight: item.productGroupWeight ?? null,
         quantity: item.quantity,
       }))
     )
@@ -272,4 +281,105 @@ export async function uploadComboImage(comboId: number, formData: FormData) {
   await db.update(combos).set({ imageUrl: blob.url }).where(eq(combos.id, comboId))
   revalidatePath('/dashboard/combos')
   return blob.url
+}
+
+export async function createComboSale(data: {
+  comboId: number
+  quantity: number
+  effectivePrice: number
+  paymentMethodId?: number
+  notes?: string
+  date: Date
+  groupSelections: { itemId: number; productId: number }[]
+}) {
+  const items = await db
+    .select({
+      itemId: comboItems.id,
+      productId: comboItems.productId,
+      productGroupName: comboItems.productGroupName,
+      productGroupWeight: comboItems.productGroupWeight,
+      quantity: comboItems.quantity,
+      unitCost: pricing.totalCost,
+      unitPrice: pricing.priceCashRounded,
+    })
+    .from(comboItems)
+    .leftJoin(products, eq(comboItems.productId, products.id))
+    .leftJoin(pricing, eq(products.id, pricing.productId))
+    .where(eq(comboItems.comboId, data.comboId))
+
+  if (items.length === 0) throw new Error('Combo sin productos configurados')
+
+  // Resolve each item: fixed → productId as-is; group → use groupSelection
+  type ResolvedItem = typeof items[number] & { resolvedProductId: number; resolvedUnitCost: string | null; resolvedUnitPrice: number | null }
+  const resolved: ResolvedItem[] = []
+
+  for (const item of items) {
+    let resolvedProductId: number
+    let resolvedUnitCost = item.unitCost
+    let resolvedUnitPrice = item.unitPrice
+
+    if (item.productGroupName) {
+      const sel = data.groupSelections.find(s => s.itemId === item.itemId)
+      if (!sel) throw new Error('Falta seleccionar variante para un slot de grupo')
+      resolvedProductId = sel.productId
+      const p = await db
+        .select({ cost: pricing.totalCost, price: pricing.priceCashRounded })
+        .from(products)
+        .leftJoin(pricing, eq(products.id, pricing.productId))
+        .where(eq(products.id, resolvedProductId))
+        .limit(1)
+      resolvedUnitCost = p[0]?.cost ?? null
+      resolvedUnitPrice = p[0]?.price ?? null
+    } else {
+      resolvedProductId = item.productId!
+    }
+
+    const prod = await db.select({ stock: products.stock }).from(products).where(eq(products.id, resolvedProductId)).limit(1)
+    if (!prod[0] || prod[0].stock < item.quantity * data.quantity) {
+      throw new Error('Stock insuficiente para uno de los productos del combo')
+    }
+
+    resolved.push({ ...item, resolvedProductId, resolvedUnitCost, resolvedUnitPrice })
+  }
+
+  // Split combo price proportional to individual prices
+  const totalIndividualValue = resolved.reduce((s, i) => s + i.quantity * (i.resolvedUnitPrice ?? 0), 0)
+
+  const lastNum = await db.select({ max: sql<number>`max(${sales.saleNumber})` }).from(sales)
+  const nextNum = (lastNum[0]?.max ?? 0) + 1
+
+  for (const item of resolved) {
+    const unitItemValue = item.quantity * (item.resolvedUnitPrice ?? 0)
+    const share = totalIndividualValue > 0 ? unitItemValue / totalIndividualValue : 1 / resolved.length
+    const effectivePerUnit = (data.effectivePrice * share) / item.quantity
+    const totalQty = item.quantity * data.quantity
+    const totalCostLine = Number(item.resolvedUnitCost ?? 0) * totalQty
+    const saleValue = effectivePerUnit * totalQty
+    const netProfit = saleValue - totalCostLine
+
+    await db.insert(sales).values({
+      saleNumber: nextNum,
+      type: 'salida',
+      productId: item.resolvedProductId,
+      quantity: totalQty,
+      effectivePrice: String(effectivePerUnit),
+      saleValue: String(saleValue),
+      totalSale: String(data.effectivePrice * data.quantity),
+      totalCost: String(totalCostLine),
+      netProfit: String(netProfit),
+      grossProfit: String(saleValue),
+      paymentMethodId: data.paymentMethodId ?? null,
+      notes: data.notes ?? null,
+      date: data.date,
+    })
+
+    await db
+      .update(products)
+      .set({ stock: sql`${products.stock} - ${totalQty}`, updatedAt: new Date() })
+      .where(eq(products.id, item.resolvedProductId))
+  }
+
+  revalidatePath('/dashboard/sales')
+  revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard')
 }
