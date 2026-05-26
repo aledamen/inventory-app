@@ -58,9 +58,18 @@ function ComboFormDialog({
   const [loading, setLoading] = useState(false)
   function itemsFromCombo(c?: ComboFull): ItemRow[] {
     if (!c) return []
+    // Build weights map to default null-weight group slots to first available weight
+    const weightsMap = new Map<string, number[]>()
+    for (const p of products) {
+      if (!p.weightG) continue
+      const ws = weightsMap.get(p.name) ?? []
+      if (!ws.includes(p.weightG)) ws.push(p.weightG)
+      weightsMap.set(p.name, ws.sort((a, b) => a - b))
+    }
     return c.items.map(i => {
       if (i.productGroupName) {
-        return { name: i.productGroupName, weight: i.productGroupWeight ?? undefined, productId: undefined, quantity: i.quantity }
+        const weight = i.productGroupWeight ?? weightsMap.get(i.productGroupName)?.[0]
+        return { name: i.productGroupName, weight, productId: undefined, quantity: i.quantity }
       }
       const p = products.find(p => p.id === i.productId)
       return { name: p?.name ?? '', weight: p?.weightG ?? undefined, productId: i.productId ?? undefined, quantity: i.quantity }
