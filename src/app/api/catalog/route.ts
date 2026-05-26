@@ -133,6 +133,7 @@ export async function GET() {
     }
     const promo = promoByProduct.get(row.id)
     grouped[key].salesCount += soldByProduct.get(row.id) ?? 0
+    grouped[key].featured = grouped[key].featured || (row.featured ?? false)
     grouped[key].variants.push({
       sku: row.sku,
       flavor: row.flavor,
@@ -297,8 +298,6 @@ export async function GET() {
     const bBanner = b.bannerName != null
     if (aBanner && !bBanner) return -1
     if (!aBanner && bBanner) return 1
-    if (a.featured && !b.featured) return -1
-    if (!a.featured && b.featured) return 1
     return b.salesCount - a.salesCount
   })
 
