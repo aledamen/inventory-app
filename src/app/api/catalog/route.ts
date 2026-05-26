@@ -213,7 +213,7 @@ export async function GET() {
         })
         .from(products)
         .leftJoin(flavors, eq(products.flavorId, flavors.id))
-        .where(and(eq(products.visible, true), or(...conds)))
+        .where(or(...conds))
       for (const p of productRows) {
         const key = `${p.name}||${p.weightG ?? ''}`
         const list = groupProductsMap.get(key) ?? []
@@ -285,18 +285,18 @@ export async function GET() {
     }
   }
 
-  // Sort: banner first, then featured, then stock, then salesCount desc
+  // Sort: stock first, then banner, then featured, then salesCount desc
   const data = Object.values(grouped).sort((a, b) => {
+    const aHasStock = a.variants.some(v => v.stock > 0)
+    const bHasStock = b.variants.some(v => v.stock > 0)
+    if (aHasStock && !bHasStock) return -1
+    if (!aHasStock && bHasStock) return 1
     const aBanner = a.bannerName != null
     const bBanner = b.bannerName != null
     if (aBanner && !bBanner) return -1
     if (!aBanner && bBanner) return 1
     if (a.featured && !b.featured) return -1
     if (!a.featured && b.featured) return 1
-    const aHasStock = a.variants.some(v => v.stock > 0)
-    const bHasStock = b.variants.some(v => v.stock > 0)
-    if (aHasStock && !bHasStock) return -1
-    if (!aHasStock && bHasStock) return 1
     return b.salesCount - a.salesCount
   })
 

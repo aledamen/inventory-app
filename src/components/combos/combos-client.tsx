@@ -69,6 +69,7 @@ function ComboFormDialog({
 
   const [items, setItems] = useState<ItemRow[]>(() => itemsFromCombo(combo))
   const [bannerId, setBannerId] = useState<string>(combo?.bannerId ? String(combo.bannerId) : '')
+  const [badgeValue, setBadgeValue] = useState(combo?.badge ?? '')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(combo?.imageUrl ?? null)
   const round10 = (n: number) => Math.ceil(n / 10) * 10
@@ -78,6 +79,7 @@ function ComboFormDialog({
   function resetForm() {
     setItems(itemsFromCombo(combo))
     setBannerId(combo?.bannerId ? String(combo.bannerId) : '')
+    setBadgeValue(combo?.badge ?? '')
     setImageFile(null)
     setImagePreview(combo?.imageUrl ?? null)
     setPriceTransfer(combo?.priceTransfer ? String(round10(Number(combo.priceTransfer))) : '')
@@ -201,7 +203,7 @@ function ComboFormDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="badge">Badge</Label>
-                  <Input id="badge" name="badge" placeholder="Promo, Limitado..." defaultValue={combo?.badge ?? ''} />
+                  <Input id="badge" name="badge" placeholder="Promo, Limitado..." value={badgeValue} onChange={e => setBadgeValue(e.target.value)} />
                 </div>
                 <div className="space-y-1.5 flex flex-col justify-end">
                   <Label className="flex items-center gap-2 cursor-pointer">
@@ -300,53 +302,56 @@ function ComboFormDialog({
                       (item.weight == null || p.weightG === item.weight)
                     )
                     return (
-                      <div key={idx} className="flex gap-2 items-center flex-wrap">
-                        <select
-                          className="flex-1 min-w-[120px] h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                          value={item.name}
-                          onChange={e => {
-                            const name = e.target.value
-                            const firstW = weightsForName.get(name)?.[0]
-                            updateItem(idx, { name, weight: firstW, productId: undefined })
-                          }}
-                        >
-                          {productNames.map(n => <option key={n} value={n}>{n}</option>)}
-                        </select>
-
-                        {weights.length > 0 && (
+                      <div key={idx} className="rounded-lg border border-input bg-muted/20 p-2 space-y-1.5">
+                        {/* Row 1: nombre + eliminar */}
+                        <div className="flex gap-2 items-center">
                           <select
-                            className="w-20 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm shrink-0"
-                            value={item.weight ?? ''}
-                            onChange={e => updateItem(idx, { weight: e.target.value ? Number(e.target.value) : undefined, productId: undefined })}
+                            className="flex-1 h-9 rounded-md border border-input bg-background px-2.5 text-sm"
+                            value={item.name}
+                            onChange={e => {
+                              const name = e.target.value
+                              const firstW = weightsForName.get(name)?.[0]
+                              updateItem(idx, { name, weight: firstW, productId: undefined })
+                            }}
                           >
-                            {weights.map(w => <option key={w} value={w}>{w}g</option>)}
+                            {productNames.map(n => <option key={n} value={n}>{n}</option>)}
                           </select>
-                        )}
-
-                        <select
-                          className="flex-1 min-w-[130px] h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                          value={item.productId ?? ''}
-                          onChange={e => updateItem(idx, { productId: e.target.value ? Number(e.target.value) : undefined })}
-                        >
-                          <option value="">Todos los sabores</option>
-                          {flavors.map(p => (
-                            <option key={p.id} value={p.id}>
-                              {p.flavor ?? p.name}{p.stock <= 0 ? ' (sin stock)' : ` (${p.stock})`}
-                            </option>
-                          ))}
-                        </select>
-
-                        <div className="flex flex-col items-center shrink-0" title="Unidades de este producto incluidas en cada venta del combo">
-                          <span className="text-[10px] text-muted-foreground leading-none mb-0.5">cant.</span>
-                          <Input
-                            type="number" min={1} className="w-16"
-                            value={item.quantity}
-                            onChange={e => updateItem(idx, { quantity: Math.max(1, Number(e.target.value)) })}
-                          />
+                          <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive shrink-0" onClick={() => removeItem(idx)}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
-                        <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive shrink-0" onClick={() => removeItem(idx)}>
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
+                        {/* Row 2: peso + sabor + cantidad */}
+                        <div className="flex gap-2 items-end">
+                          {weights.length > 0 && (
+                            <select
+                              className="w-[88px] h-9 rounded-md border border-input bg-background px-2.5 text-sm shrink-0"
+                              value={item.weight ?? ''}
+                              onChange={e => updateItem(idx, { weight: e.target.value ? Number(e.target.value) : undefined, productId: undefined })}
+                            >
+                              {weights.map(w => <option key={w} value={w}>{w}g</option>)}
+                            </select>
+                          )}
+                          <select
+                            className="flex-1 h-9 rounded-md border border-input bg-background px-2.5 text-sm"
+                            value={item.productId ?? ''}
+                            onChange={e => updateItem(idx, { productId: e.target.value ? Number(e.target.value) : undefined })}
+                          >
+                            <option value="">Todos los sabores</option>
+                            {flavors.map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.flavor ?? p.name}{p.stock <= 0 ? ' (sin stock)' : ` (${p.stock})`}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="flex flex-col items-center shrink-0" title="Unidades incluidas por venta">
+                            <span className="text-[10px] text-muted-foreground leading-none mb-0.5">cant.</span>
+                            <Input
+                              type="number" min={1} className="w-14 h-9"
+                              value={item.quantity}
+                              onChange={e => updateItem(idx, { quantity: Math.max(1, Number(e.target.value)) })}
+                            />
+                          </div>
+                        </div>
                       </div>
                     )
                   })}
