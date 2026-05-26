@@ -198,6 +198,19 @@ export async function GET() {
         .where(or(...conditions))
         .groupBy(products.name, products.weightG)
       for (const r of stockRows) groupStockMap.set(`${r.name}||${r.weightG ?? ''}`, Number(r.total))
+      // Null-weight slots look up by "name||" — sum all variants for that name
+      for (const slot of groupSlots) {
+        if (!slot.productGroupWeight) {
+          const key = `${slot.productGroupName}||`
+          if (!groupStockMap.has(key)) {
+            let total = 0
+            for (const [k, v] of groupStockMap) {
+              if (k.startsWith(`${slot.productGroupName}||`)) total += v
+            }
+            groupStockMap.set(key, total)
+          }
+        }
+      }
     }
 
     const itemsByCombo = new Map<number, { stock: number; quantity: number }[]>()

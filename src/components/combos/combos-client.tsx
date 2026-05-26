@@ -129,7 +129,7 @@ function ComboFormDialog({
       sku: fd.get('sku') as string,
       name: fd.get('name') as string,
       description: (fd.get('description') as string) || undefined,
-      badge: (fd.get('badge') as string) || undefined,
+      badge: (fd.get('badge') as string) || null,
       featured: fd.get('featured') === 'on',
       priceEffective: Number(fd.get('priceEffective')),
       priceTransfer: fd.get('priceTransfer') ? Number(fd.get('priceTransfer')) : undefined,

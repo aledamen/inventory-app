@@ -58,7 +58,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
       type: fd.get('type') as string || 'estandar',
       notes: fd.get('notes') as string || undefined,
       description: fd.get('description') as string || undefined,
-      badge: fd.get('badge') as string || undefined,
+      badge: (fd.get('badge') as string) || null,
       featured: fd.get('featured') === 'on',
       bannerId: bannerId ? Number(bannerId) : null,
     }

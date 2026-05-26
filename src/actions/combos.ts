@@ -106,6 +106,19 @@ export async function getCombosFull(): Promise<ComboFull[]> {
       .where(or(...conditions))
       .groupBy(products.name, products.weightG)
     for (const r of rows) groupStockMap.set(`${r.name}||${r.weightG ?? ''}`, Number(r.total))
+    // Null-weight slots look up by "name||" — sum all variants for that name
+    for (const slot of groupSlots) {
+      if (!slot.productGroupWeight) {
+        const key = `${slot.productGroupName}||`
+        if (!groupStockMap.has(key)) {
+          let total = 0
+          for (const [k, v] of groupStockMap) {
+            if (k.startsWith(`${slot.productGroupName}||`)) total += v
+          }
+          groupStockMap.set(key, total)
+        }
+      }
+    }
   }
 
   // Group items by comboId
@@ -164,7 +177,7 @@ type ComboInput = {
   sku: string
   name: string
   description?: string
-  badge?: string
+  badge?: string | null
   featured?: boolean
   visible?: boolean
   priceEffective: number
@@ -217,7 +230,7 @@ export async function updateCombo(id: number, data: Partial<ComboInput>) {
       ...(data.sku !== undefined && { sku: data.sku }),
       ...(data.name !== undefined && { name: data.name }),
       ...(data.description !== undefined && { description: data.description }),
-      ...(data.badge !== undefined && { badge: data.badge }),
+      ...('badge' in data && { badge: data.badge ?? null }),
       ...(data.featured !== undefined && { featured: data.featured }),
       ...(data.visible !== undefined && { visible: data.visible }),
       ...(data.priceEffective !== undefined && { priceEffective: String(data.priceEffective) }),
