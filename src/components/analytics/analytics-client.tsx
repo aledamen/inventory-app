@@ -33,15 +33,31 @@ type Props = {
 }
 
 const PRESETS = [
-  { label: 'Esta semana', days: 7 },
-  { label: 'Este mes', days: 30 },
-  { label: 'Últimos 3 meses', days: 90 },
-  { label: 'Este año', days: 365 },
-  { label: 'Todo', days: 0 },
-]
+  { label: 'Esta semana', key: 'week' },
+  { label: 'Este mes', key: 'month' },
+  { label: 'Últimos 3 meses', key: '3months' },
+  { label: 'Este año', key: 'year' },
+  { label: 'Todo', key: 'all' },
+] as const
+
+type PresetKey = typeof PRESETS[number]['key']
 
 function toDateInput(d: Date) {
   return d.toISOString().split('T')[0]
+}
+
+function getPresetRange(key: PresetKey): { from: string; to: string } | null {
+  const now = new Date()
+  const to = toDateInput(now)
+  if (key === 'week') {
+    const d = new Date(now)
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+    return { from: toDateInput(d), to }
+  }
+  if (key === 'month') return { from: toDateInput(new Date(now.getFullYear(), now.getMonth(), 1)), to }
+  if (key === '3months') return { from: toDateInput(new Date(now.getFullYear(), now.getMonth() - 2, 1)), to }
+  if (key === 'year') return { from: toDateInput(new Date(now.getFullYear(), 0, 1)), to }
+  return null
 }
 
 export function AnalyticsClient({ from, to, summary, ranking, byDay, byWeek, byMonth, byYear, inventory, stockHistory, expensesByType }: Props) {
@@ -55,22 +71,20 @@ export function AnalyticsClient({ from, to, summary, ranking, byDay, byWeek, byM
     router.push(`${pathname}?${p.toString()}`)
   }
 
-  function applyPreset(days: number) {
-    if (days === 0) {
-      router.push(pathname)
-      return
-    }
-    const end = new Date()
-    const start = new Date()
-    start.setDate(start.getDate() - days)
-    applyRange(toDateInput(start), toDateInput(end))
+  function applyPreset(key: PresetKey) {
+    if (key === 'all') { router.push(pathname); return }
+    const range = getPresetRange(key)
+    if (range) applyRange(range.from, range.to)
   }
 
   const activePreset = (() => {
-    if (!from && !to) return 'Todo'
-    const diff = from ? Math.round((Date.now() - new Date(from).getTime()) / 86400000) : 0
-    const found = PRESETS.find(p => p.days === diff)
-    return found?.label ?? null
+    if (!from && !to) return 'all'
+    for (const p of PRESETS) {
+      if (p.key === 'all') continue
+      const range = getPresetRange(p.key)
+      if (range && range.from === from && range.to === to) return p.key
+    }
+    return null
   })()
 
   return (
@@ -79,10 +93,10 @@ export function AnalyticsClient({ from, to, summary, ranking, byDay, byWeek, byM
       <div className="flex flex-wrap items-center gap-2">
         {PRESETS.map(p => (
           <Button
-            key={p.label}
-            variant={activePreset === p.label ? 'default' : 'outline'}
+            key={p.key}
+            variant={activePreset === p.key ? 'default' : 'outline'}
             size="sm"
-            onClick={() => applyPreset(p.days)}
+            onClick={() => applyPreset(p.key)}
           >
             {p.label}
           </Button>
