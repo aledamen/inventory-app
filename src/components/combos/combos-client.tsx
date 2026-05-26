@@ -31,7 +31,9 @@ type Props = {
 }
 
 type ItemRow = {
-  productId: number
+  type: 'fixed' | 'group'
+  productId?: number
+  productGroupName?: string
   quantity: number
 }
 
@@ -55,25 +57,37 @@ function ComboFormDialog({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [items, setItems] = useState<ItemRow[]>(
-    combo?.items.map(i => ({ productId: i.productId, quantity: i.quantity })) ?? []
+    combo?.items.map(i => ({
+      type: i.productGroupName ? 'group' as const : 'fixed' as const,
+      productId: i.productId ?? undefined,
+      productGroupName: i.productGroupName ?? undefined,
+      quantity: i.quantity,
+    })) ?? []
   )
   const [bannerId, setBannerId] = useState<string>(combo?.bannerId ? String(combo.bannerId) : '')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(combo?.imageUrl ?? null)
 
   function resetForm() {
-    setItems(combo?.items.map(i => ({ productId: i.productId, quantity: i.quantity })) ?? [])
+    setItems(combo?.items.map(i => ({
+      type: i.productGroupName ? 'group' as const : 'fixed' as const,
+      productId: i.productId ?? undefined,
+      productGroupName: i.productGroupName ?? undefined,
+      quantity: i.quantity,
+    })) ?? [])
     setBannerId(combo?.bannerId ? String(combo.bannerId) : '')
     setImageFile(null)
     setImagePreview(combo?.imageUrl ?? null)
   }
 
+  const productNames = useMemo(() => [...new Set(products.map(p => p.name))].sort(), [products])
+
   function addItem() {
-    setItems(prev => [...prev, { productId: products[0]?.id ?? 0, quantity: 1 }])
+    setItems(prev => [...prev, { type: 'fixed', productId: products[0]?.id, quantity: 1 }])
   }
 
-  function updateItem(idx: number, field: keyof ItemRow, value: number) {
-    setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item))
+  function updateItem(idx: number, patch: Partial<ItemRow>) {
+    setItems(prev => prev.map((item, i) => i === idx ? { ...item, ...patch } : item))
   }
 
   function removeItem(idx: number) {
@@ -99,7 +113,11 @@ function ComboFormDialog({
       priceList: fd.get('priceList') ? Number(fd.get('priceList')) : undefined,
       notes: (fd.get('notes') as string) || undefined,
       bannerId: bannerId ? Number(bannerId) : null,
-      items,
+      items: items.map(item =>
+        item.type === 'group'
+          ? { productGroupName: item.productGroupName!, quantity: item.quantity }
+          : { productId: item.productId!, quantity: item.quantity }
+      ),
     }
     try {
       let comboId: number
@@ -212,22 +230,49 @@ function ComboFormDialog({
               {items.map((item, idx) => (
                 <div key={idx} className="flex gap-2 items-center">
                   <select
-                    className="flex-1 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                    value={item.productId}
-                    onChange={e => updateItem(idx, 'productId', Number(e.target.value))}
+                    className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-xs text-muted-foreground shrink-0"
+                    value={item.type}
+                    onChange={e => {
+                      const t = e.target.value as 'fixed' | 'group'
+                      updateItem(idx, t === 'group'
+                        ? { type: 'group', productId: undefined, productGroupName: productNames[0] }
+                        : { type: 'fixed', productGroupName: undefined, productId: products[0]?.id })
+                    }}
                   >
-                    {products.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}{p.flavor ? ' · ' + p.flavor : ''} (stock: {p.stock})
-                      </option>
-                    ))}
+                    <option value="fixed">Variante fija</option>
+                    <option value="group">Cualquier variante</option>
                   </select>
+
+                  {item.type === 'fixed' ? (
+                    <select
+                      className="flex-1 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                      value={item.productId}
+                      onChange={e => updateItem(idx, { productId: Number(e.target.value) })}
+                    >
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}{p.flavor ? ' · ' + p.flavor : ''} (stock: {p.stock})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      className="flex-1 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                      value={item.productGroupName}
+                      onChange={e => updateItem(idx, { productGroupName: e.target.value })}
+                    >
+                      {productNames.map(name => (
+                        <option key={name} value={name}>{name} (cualquier sabor)</option>
+                      ))}
+                    </select>
+                  )}
+
                   <Input
                     type="number"
                     min={1}
                     className="w-20"
                     value={item.quantity}
-                    onChange={e => updateItem(idx, 'quantity', Math.max(1, Number(e.target.value)))}
+                    onChange={e => updateItem(idx, { quantity: Math.max(1, Number(e.target.value)) })}
                   />
                   <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive shrink-0" onClick={() => removeItem(idx)}>
                     <X className="h-3.5 w-3.5" />

@@ -2,7 +2,7 @@
 
 import { db } from '@/db'
 import { combos, comboItems, products, pricing, flavors, banners } from '@/db/schema'
-import { eq, inArray } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { put, del } from '@vercel/blob'
 
@@ -29,9 +29,10 @@ export type ComboFull = {
   availableStock: number
   items: {
     id: number
-    productId: number
-    productName: string
-    productSku: string
+    productId: number | null
+    productGroupName: string | null
+    productName: string | null
+    productSku: string | null
     productFlavor: string | null
     quantity: number
     stock: number
@@ -74,6 +75,7 @@ export async function getCombosFull(): Promise<ComboFull[]> {
       itemId: comboItems.id,
       comboId: comboItems.comboId,
       productId: comboItems.productId,
+      productGroupName: comboItems.productGroupName,
       quantity: comboItems.quantity,
       productName: products.name,
       productSku: products.sku,
@@ -82,10 +84,22 @@ export async function getCombosFull(): Promise<ComboFull[]> {
       unitCost: pricing.totalCost,
     })
     .from(comboItems)
-    .innerJoin(products, eq(comboItems.productId, products.id))
+    .leftJoin(products, eq(comboItems.productId, products.id))
     .leftJoin(flavors, eq(products.flavorId, flavors.id))
     .leftJoin(pricing, eq(products.id, pricing.productId))
     .where(inArray(comboItems.comboId, comboIds))
+
+  // Pre-fetch total stock for group slots
+  const groupNames = [...new Set(itemRows.filter(r => r.productGroupName).map(r => r.productGroupName!))]
+  const groupStockMap = new Map<string, number>()
+  if (groupNames.length > 0) {
+    const rows = await db
+      .select({ name: products.name, total: sql<number>`sum(${products.stock})` })
+      .from(products)
+      .where(inArray(products.name, groupNames))
+      .groupBy(products.name)
+    for (const r of rows) groupStockMap.set(r.name, Number(r.total))
+  }
 
   // Group items by comboId
   const itemsByCombo = new Map<number, ComboFull['items']>()
@@ -93,12 +107,15 @@ export async function getCombosFull(): Promise<ComboFull[]> {
     const list = itemsByCombo.get(row.comboId) ?? []
     list.push({
       id: row.itemId,
-      productId: row.productId,
-      productName: row.productName,
-      productSku: row.productSku,
+      productId: row.productId ?? null,
+      productGroupName: row.productGroupName ?? null,
+      productName: row.productName ?? null,
+      productSku: row.productSku ?? null,
       productFlavor: row.productFlavor ?? null,
       quantity: row.quantity,
-      stock: row.stock,
+      stock: row.productGroupName
+        ? (groupStockMap.get(row.productGroupName) ?? 0)
+        : (row.stock ?? 0),
       unitCost: row.unitCost ?? null,
     })
     itemsByCombo.set(row.comboId, list)
@@ -147,7 +164,7 @@ type ComboInput = {
   priceList?: number
   notes?: string
   bannerId?: number | null
-  items: { productId: number; quantity: number }[]
+  items: { productId?: number; productGroupName?: string; quantity: number }[]
 }
 
 export async function createCombo(data: ComboInput): Promise<{ id: number }> {
@@ -172,7 +189,8 @@ export async function createCombo(data: ComboInput): Promise<{ id: number }> {
     await db.insert(comboItems).values(
       data.items.map(item => ({
         comboId: combo.id,
-        productId: item.productId,
+        productId: item.productId ?? null,
+        productGroupName: item.productGroupName ?? null,
         quantity: item.quantity,
       }))
     )
@@ -208,7 +226,8 @@ export async function updateCombo(id: number, data: Partial<ComboInput>) {
       await db.insert(comboItems).values(
         data.items.map(item => ({
           comboId: id,
-          productId: item.productId,
+          productId: item.productId ?? null,
+          productGroupName: item.productGroupName ?? null,
           quantity: item.quantity,
         }))
       )
