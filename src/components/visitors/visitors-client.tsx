@@ -42,6 +42,25 @@ export function VisitorsClient({ stats, blockedIps, currentIp }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editIp, setEditIp] = useState('')
   const [editLabel, setEditLabel] = useState('')
+  const [newIp, setNewIp] = useState('')
+  const [newLabel, setNewLabel] = useState('')
+  const [adding, setAdding] = useState(false)
+
+  async function handleAddManual() {
+    if (!newIp.trim()) return
+    setAdding(true)
+    try {
+      await addBlockedIp(newIp.trim(), newLabel.trim() || undefined)
+      toast.success(`IP ${newIp.trim()} bloqueada`)
+      setNewIp('')
+      setNewLabel('')
+      router.refresh()
+    } catch {
+      toast.error('Error al bloquear IP')
+    } finally {
+      setAdding(false)
+    }
+  }
 
   const isCurrentIpBlocked = blockedIps.some(b => b.ip === currentIp)
 
@@ -202,6 +221,33 @@ export function VisitorsClient({ stats, blockedIps, currentIp }: Props) {
               </Button>
             )
           }
+        </div>
+
+        {/* Add IP manually */}
+        <div className="flex gap-2 items-end">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">IP a bloquear</p>
+            <Input
+              value={newIp}
+              onChange={e => setNewIp(e.target.value)}
+              placeholder="192.168.1.1"
+              className="h-9 text-sm font-mono w-44"
+              onKeyDown={e => e.key === 'Enter' && handleAddManual()}
+            />
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Label (opcional)</p>
+            <Input
+              value={newLabel}
+              onChange={e => setNewLabel(e.target.value)}
+              placeholder="Ej: Casa, Oficina..."
+              className="h-9 text-sm w-40"
+              onKeyDown={e => e.key === 'Enter' && handleAddManual()}
+            />
+          </div>
+          <Button size="sm" onClick={handleAddManual} disabled={adding || !newIp.trim()}>
+            <ShieldBan className="h-3.5 w-3.5 mr-1.5" />Bloquear
+          </Button>
         </div>
 
         <div className="bg-card rounded-xl border border-border overflow-x-auto">

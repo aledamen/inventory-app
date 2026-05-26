@@ -11,24 +11,32 @@ import { Label } from '@/components/ui/label'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import {
+  Combobox, ComboboxInput, ComboboxContent, ComboboxList,
+  ComboboxItem, ComboboxEmpty,
+} from '@/components/ui/combobox'
 import { Textarea } from '@/components/ui/textarea'
 import { updateSale } from '@/actions/sales'
 import type { ProductWithRelations, SaleWithProduct } from '@/types'
 import { Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 
+type Client = { id: number; name: string; phone: string | null }
+
 type Props = {
   sale: SaleWithProduct
   products: ProductWithRelations[]
   lookups: { paymentMethods: { id: number; name: string }[] }
+  clients?: Client[]
 }
 
-export function SaleEditDialog({ sale, products, lookups }: Props) {
+export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [productId, setProductId] = useState(String(sale.productId))
   const [paymentMethodId, setPaymentMethodId] = useState(sale.paymentMethodId ? String(sale.paymentMethodId) : '')
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(sale.clientId ?? null)
 
   const selectedProduct = products.find(p => p.id === Number(productId))
 
@@ -44,6 +52,7 @@ export function SaleEditDialog({ sale, products, lookups }: Props) {
         quantity: Number(fd.get('quantity')),
         effectivePrice: Number(fd.get('effectivePrice')),
         paymentMethodId: paymentMethodId ? Number(paymentMethodId) : null,
+        clientId: selectedClientId,
         notes: (fd.get('notes') as string) || undefined,
         date: new Date(fd.get('date') as string),
       })
@@ -122,6 +131,28 @@ export function SaleEditDialog({ sale, products, lookups }: Props) {
               />
             </div>
           </div>
+
+          {clients.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Cliente</Label>
+              <Combobox
+                value={selectedClientId}
+                onValueChange={v => setSelectedClientId(v as number | null)}
+              >
+                <ComboboxInput showClear placeholder="Buscar cliente..." className="w-full" />
+                <ComboboxContent>
+                  <ComboboxList>
+                    <ComboboxEmpty>Sin resultados</ComboboxEmpty>
+                    {clients.map(c => (
+                      <ComboboxItem key={c.id} value={c.id}>
+                        {c.name}{c.phone ? ` · ${c.phone}` : ''}
+                      </ComboboxItem>
+                    ))}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">

@@ -130,7 +130,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
         ? <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}><Pencil className="h-3.5 w-3.5" /></DialogTrigger>
         : <DialogTrigger render={<Button />}><Plus className="h-4 w-4 mr-2" />Nuevo producto</DialogTrigger>
       }
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{mode === 'edit' ? 'Editar producto' : 'Nuevo producto'}</DialogTitle>
         </DialogHeader>

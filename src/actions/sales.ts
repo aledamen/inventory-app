@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/db'
-import { sales, products, paymentMethods, pricing, flavors } from '@/db/schema'
+import { sales, products, paymentMethods, pricing, flavors, clients } from '@/db/schema'
 import { eq, desc, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
@@ -22,11 +22,14 @@ export async function getSales() {
       paymentMethodId: sales.paymentMethodId,
       paymentMethod: paymentMethods.name,
       notes: sales.notes,
+      clientId: sales.clientId,
+      clientName: clients.name,
     })
     .from(sales)
     .leftJoin(products, eq(sales.productId, products.id))
     .leftJoin(flavors, eq(products.flavorId, flavors.id))
     .leftJoin(paymentMethods, eq(sales.paymentMethodId, paymentMethods.id))
+    .leftJoin(clients, eq(sales.clientId, clients.id))
     .orderBy(desc(sales.date))
 }
 
@@ -94,6 +97,7 @@ export async function updateSale(id: number, data: {
   quantity: number
   effectivePrice: number
   paymentMethodId?: number | null
+  clientId?: number | null
   notes?: string
   date: Date
 }) {
@@ -132,6 +136,7 @@ export async function updateSale(id: number, data: {
     netProfit: String(netProfit),
     grossProfit: String(saleValue),
     paymentMethodId: data.paymentMethodId ?? null,
+    clientId: data.clientId ?? null,
     notes: data.notes ?? null,
     date: data.date,
   }).where(eq(sales.id, id))

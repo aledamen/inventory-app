@@ -24,7 +24,7 @@ export default async function SalesPage() {
         </div>
         <SaleFormDialog products={products} lookups={lookups} combos={combos} clients={clients} />
       </div>
-      <SalesTable sales={salesData} products={products} lookups={lookups} />
+      <SalesTable sales={salesData} products={products} lookups={lookups} clients={clients} />
     </div>
   )
 }

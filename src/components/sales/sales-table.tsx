@@ -17,13 +17,16 @@ import { toast } from 'sonner'
 
 type SortField = 'saleNumber' | 'date' | 'productName' | 'quantity' | 'effectivePrice' | 'totalSale' | 'netProfit' | 'paymentMethod'
 
+type Client = { id: number; name: string; phone: string | null }
+
 type Props = {
   sales: SaleWithProduct[]
   products: ProductWithRelations[]
   lookups: { paymentMethods: { id: number; name: string }[] }
+  clients?: Client[]
 }
 
-export function SalesTable({ sales, products, lookups }: Props) {
+export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState<SortField>('date')
@@ -155,7 +158,7 @@ export function SalesTable({ sales, products, lookups }: Props) {
                 <TableCell>{s.paymentMethod ?? '—'}</TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <SaleEditDialog sale={s} products={products} lookups={lookups} />
+                    <SaleEditDialog sale={s} products={products} lookups={lookups} clients={clients} />
                     <Button
                       variant="ghost"
                       size="icon"

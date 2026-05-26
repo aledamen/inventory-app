@@ -57,4 +57,6 @@ export type SaleWithProduct = {
   paymentMethodId: number | null
   paymentMethod: string | null
   notes: string | null
+  clientId: number | null
+  clientName: string | null
 }
