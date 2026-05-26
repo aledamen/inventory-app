@@ -6,6 +6,13 @@ import { sql } from 'drizzle-orm'
 
 export const revalidate = 60
 
+function cartesian<T>(arrays: T[][]): T[][] {
+  return arrays.reduce<T[][]>(
+    (acc, arr) => acc.flatMap(c => arr.map(item => [...c, item])),
+    [[]]
+  )
+}
+
 export async function GET() {
   const [rows, salesRows, promoRows] = await Promise.all([
     db
@@ -166,8 +173,7 @@ export async function GET() {
     .leftJoin(banners, eq(combos.bannerId, banners.id))
     .where(eq(combos.visible, true))
 
-  // Build combo stock map (handles both fixed productId slots and group slots)
-  const comboStockMap = new Map<number, number>()
+  // Build combo entries with per-flavor variants for group slots
   if (visibleCombos.length > 0) {
     const comboIds = visibleCombos.map(c => c.id)
     const comboItemRows = await db
@@ -183,81 +189,99 @@ export async function GET() {
       .leftJoin(products, eq(comboItems.productId, products.id))
       .where(inArray(comboItems.comboId, comboIds))
 
-    // For group slots, fetch total stock by name+weight
+    // For group slots, fetch individual products with their flavors
     const groupSlots = comboItemRows.filter(r => r.productGroupName)
-    const groupStockMap = new Map<string, number>()
+    const groupProductsMap = new Map<string, Array<{ id: number; sku: string; flavor: string | null; stock: number }>>()
     if (groupSlots.length > 0) {
-      const conditions = groupSlots.map(r =>
-        r.productGroupWeight
-          ? and(eq(products.name, r.productGroupName!), eq(products.weightG, r.productGroupWeight))
-          : eq(products.name, r.productGroupName!)
-      )
-      const stockRows = await db
-        .select({ name: products.name, weightG: products.weightG, total: sql<number>`sum(${products.stock})` })
+      const slotKeys = new Set(groupSlots.map(r => `${r.productGroupName}||${r.productGroupWeight ?? ''}`))
+      const conds = Array.from(slotKeys).map(key => {
+        const sep = key.indexOf('||')
+        const name = key.slice(0, sep)
+        const weight = key.slice(sep + 2)
+        return weight
+          ? and(eq(products.name, name), eq(products.weightG, parseInt(weight)))
+          : eq(products.name, name)
+      })
+      const productRows = await db
+        .select({
+          id: products.id,
+          name: products.name,
+          weightG: products.weightG,
+          sku: products.sku,
+          stock: products.stock,
+          flavor: flavors.name,
+        })
         .from(products)
-        .where(or(...conditions))
-        .groupBy(products.name, products.weightG)
-      for (const r of stockRows) groupStockMap.set(`${r.name}||${r.weightG ?? ''}`, Number(r.total))
-      // Null-weight slots look up by "name||" — sum all variants for that name
-      for (const slot of groupSlots) {
-        if (!slot.productGroupWeight) {
-          const key = `${slot.productGroupName}||`
-          if (!groupStockMap.has(key)) {
-            let total = 0
-            for (const [k, v] of groupStockMap) {
-              if (k.startsWith(`${slot.productGroupName}||`)) total += v
-            }
-            groupStockMap.set(key, total)
-          }
-        }
+        .leftJoin(flavors, eq(products.flavorId, flavors.id))
+        .where(and(eq(products.visible, true), or(...conds)))
+      for (const p of productRows) {
+        const key = `${p.name}||${p.weightG ?? ''}`
+        const list = groupProductsMap.get(key) ?? []
+        list.push({ id: p.id, sku: p.sku, flavor: p.flavor, stock: p.stock })
+        groupProductsMap.set(key, list)
       }
     }
 
-    const itemsByCombo = new Map<number, { stock: number; quantity: number }[]>()
-    for (const row of comboItemRows) {
-      const stock = row.productGroupName
-        ? (groupStockMap.get(`${row.productGroupName}||${row.productGroupWeight ?? ''}`) ?? 0)
-        : (row.stock ?? 0)
-      const list = itemsByCombo.get(row.comboId) ?? []
-      list.push({ stock, quantity: row.quantity })
-      itemsByCombo.set(row.comboId, list)
-    }
-    for (const [cId, cItems] of itemsByCombo) {
-      const stock = cItems.length === 0 ? 0 : Math.min(...cItems.map(i => Math.floor(i.stock / i.quantity)))
-      comboStockMap.set(cId, stock)
-    }
-  }
+    for (const combo of visibleCombos) {
+      const thisItems = comboItemRows.filter(r => r.comboId === combo.id)
+      const fixedItems = thisItems.filter(r => r.productId !== null)
+      const groupItemSlots = thisItems.filter(r => r.productGroupName !== null)
 
-  // Build combo entries
-  for (const combo of visibleCombos) {
-    const comboStock = comboStockMap.get(combo.id) ?? 0
-    grouped[`combo__${combo.sku}`] = {
-      id: `combo__${combo.sku}`,
-      name: combo.name,
-      brand: 'Combo',
-      category: 'Combos',
-      image: combo.imageUrl,
-      visible: true,
-      salesCount: 0,
-      description: combo.description,
-      badge: combo.badge ?? 'Combo',
-      featured: combo.featured,
-      bannerName: combo.bannerName ?? null,
-      bannerColor: combo.bannerColor ?? null,
-      bannerTextColor: combo.bannerTextColor ?? null,
-      bannerPosition: combo.bannerPosition ?? null,
-      variants: [{
-        sku: combo.sku,
-        flavor: null,
-        stock: comboStock,
-        weightG: null,
-        priceEffective: Number(combo.priceEffective),
-        priceTransfer: Number(combo.priceTransfer ?? combo.priceEffective),
-        priceList: Number(combo.priceList ?? combo.priceEffective),
+      const makeVariant = (sku: string, flavor: string | null, stock: number) => ({
+        sku, flavor, stock,
+        weightG: null as number | null,
+        priceEffective: Number(combo.priceEffective) as number | null,
+        priceTransfer: Number(combo.priceTransfer ?? combo.priceEffective) as number | null,
+        priceList: Number(combo.priceList ?? combo.priceEffective) as number | null,
         image: combo.imageUrl,
-        promoPrice: null,
-        promoLabel: null,
-      }],
+        promoPrice: null as number | null,
+        promoLabel: null as string | null,
+      })
+
+      let comboVariants
+      if (groupItemSlots.length === 0) {
+        const stocks = fixedItems.map(fi => Math.floor((fi.stock ?? 0) / fi.quantity))
+        comboVariants = [makeVariant(combo.sku, null, stocks.length === 0 ? 0 : Math.min(...stocks))]
+      } else {
+        const slotOptions = groupItemSlots.map(slot => ({
+          slot,
+          products: groupProductsMap.get(`${slot.productGroupName}||${slot.productGroupWeight ?? ''}`) ?? [],
+        }))
+        const combinations = cartesian(slotOptions.map(s => s.products))
+        if (combinations.length === 0) {
+          comboVariants = [makeVariant(combo.sku, null, 0)]
+        } else {
+          const fixedStocks = fixedItems.map(fi => Math.floor((fi.stock ?? 0) / fi.quantity))
+          comboVariants = combinations.map(choice => {
+            const groupStocks = choice.map((p, i) => Math.floor(p.stock / slotOptions[i].slot.quantity))
+            const allStocks = [...groupStocks, ...fixedStocks]
+            const flavorLabel = choice.map(p => p.flavor).filter((f): f is string => f !== null).join(' · ') || null
+            return makeVariant(
+              `${combo.sku}__${choice.map(p => p.id).join('_')}`,
+              flavorLabel,
+              allStocks.length === 0 ? 0 : Math.min(...allStocks)
+            )
+          })
+        }
+      }
+
+      grouped[`combo__${combo.sku}`] = {
+        id: `combo__${combo.sku}`,
+        name: combo.name,
+        brand: 'Combo',
+        category: 'Combos',
+        image: combo.imageUrl,
+        visible: true,
+        salesCount: 0,
+        description: combo.description,
+        badge: combo.badge ?? null,
+        featured: combo.featured,
+        bannerName: combo.bannerName ?? null,
+        bannerColor: combo.bannerColor ?? null,
+        bannerTextColor: combo.bannerTextColor ?? null,
+        bannerPosition: combo.bannerPosition ?? null,
+        variants: comboVariants,
+      }
     }
   }
 
