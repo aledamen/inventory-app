@@ -32,14 +32,13 @@ export async function getAnalyticsSummary(from?: string, to?: string) {
 
   const [salesRow, expensesRow] = await Promise.all([
     db.select({
-      // sale_value = precio_efectivo × cantidad por fila (no total_sale que duplica)
-      totalRevenue: sql<string>`coalesce(sum(${sales.saleValue}), 0)`,
+      // fallback a effective_price * quantity si sale_value es NULL (datos históricos)
+      totalRevenue: sql<string>`coalesce(sum(coalesce(${sales.saleValue}, ${sales.effectivePrice} * ${sales.quantity})), 0)`,
       totalNetProfitStored: sql<string>`coalesce(sum(${sales.netProfit}), 0)`,
       totalCost: sql<string>`coalesce(sum(${sales.totalCost}), 0)`,
       totalUnits: sql<number>`coalesce(sum(${sales.quantity}), 0)`,
       txCount: sql<number>`count(distinct ${sales.saleNumber})`,
-      // margen = ganancia / facturación (sobre revenue, no markup sobre costo)
-      avgMargin: sql<string>`coalesce(sum(${sales.netProfit}) / nullif(sum(${sales.saleValue}), 0), 0)`,
+      avgMargin: sql<string>`coalesce(sum(${sales.netProfit}) / nullif(sum(coalesce(${sales.saleValue}, ${sales.effectivePrice} * ${sales.quantity})), 0), 0)`,
     }).from(sales).where(where),
     db.select({ total: sql<string>`coalesce(sum(${expenses.total}), 0)` }).from(expenses).where(expensesWhere),
   ])
@@ -76,17 +75,17 @@ export async function getSalesRanking(from?: string, to?: string) {
     productSku: products.sku,
     productFlavor: flavors.name,
     totalUnits: sql<number>`sum(${sales.quantity})`,
-    totalRevenue: sql<string>`sum(${sales.saleValue})`,
+    totalRevenue: sql<string>`sum(coalesce(${sales.saleValue}, ${sales.effectivePrice} * ${sales.quantity}))`,
     totalProfit: sql<string>`sum(${sales.netProfit})`,
     txCount: sql<number>`count(distinct ${sales.saleNumber})`,
-    avgMargin: sql<string>`sum(${sales.netProfit}) / nullif(sum(${sales.saleValue}), 0)`,
+    avgMargin: sql<string>`sum(${sales.netProfit}) / nullif(sum(coalesce(${sales.saleValue}, ${sales.effectivePrice} * ${sales.quantity})), 0)`,
   })
     .from(sales)
     .innerJoin(products, eq(sales.productId, products.id))
     .leftJoin(flavors, eq(products.flavorId, flavors.id))
     .where(conds.length ? and(...conds) : undefined)
     .groupBy(sales.productId, products.name, products.sku, flavors.name)
-    .orderBy(desc(sql`sum(${sales.saleValue})`))
+    .orderBy(desc(sql`sum(coalesce(${sales.saleValue}, ${sales.effectivePrice} * ${sales.quantity}))`))
 }
 
 export type PeriodGroup = 'day' | 'week' | 'month' | 'year'
@@ -107,11 +106,11 @@ export async function getSalesByPeriod(groupBy: PeriodGroup, from?: string, to?:
   const result = await db.execute<Row>(sql`
     SELECT
       date_trunc(${groupBy}, "sales"."date") AS period,
-      coalesce(sum(sale_value), 0)           AS revenue,
-      coalesce(sum(net_profit), 0)           AS profit,
-      coalesce(sum(quantity), 0)             AS units,
-      count(distinct sale_number)            AS tx_count,
-      coalesce(sum(net_profit) / nullif(sum(sale_value), 0), 0) AS avg_margin
+      coalesce(sum(coalesce(sale_value, effective_price * quantity)), 0) AS revenue,
+      coalesce(sum(net_profit), 0)                                      AS profit,
+      coalesce(sum(quantity), 0)                                        AS units,
+      count(distinct sale_number)                                       AS tx_count,
+      coalesce(sum(net_profit) / nullif(sum(coalesce(sale_value, effective_price * quantity)), 0), 0) AS avg_margin
     FROM sales
     ${whereClause}
     GROUP BY 1

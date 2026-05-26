@@ -22,7 +22,7 @@ export async function getDashboardStats() {
     }).from(products).leftJoin(pricing, eq(products.id, pricing.productId)),
 
     db.select({
-      totalSale: sql<string>`sum(${sales.saleValue})`,
+      totalSale: sql<string>`sum(coalesce(${sales.saleValue}, ${sales.effectivePrice} * ${sales.quantity}))`,
       totalNetProfit: sql<string>`sum(${sales.netProfit})`,
       count: sql<number>`count(distinct ${sales.saleNumber})`,
     }).from(sales).where(gte(sales.date, firstOfMonth)),
