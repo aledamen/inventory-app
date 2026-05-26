@@ -336,11 +336,14 @@ function ComboFormDialog({
                           ))}
                         </select>
 
-                        <Input
-                          type="number" min={1} className="w-16 shrink-0"
-                          value={item.quantity}
-                          onChange={e => updateItem(idx, { quantity: Math.max(1, Number(e.target.value)) })}
-                        />
+                        <div className="flex flex-col items-center shrink-0" title="Unidades de este producto incluidas en cada venta del combo">
+                          <span className="text-[10px] text-muted-foreground leading-none mb-0.5">cant.</span>
+                          <Input
+                            type="number" min={1} className="w-16"
+                            value={item.quantity}
+                            onChange={e => updateItem(idx, { quantity: Math.max(1, Number(e.target.value)) })}
+                          />
+                        </div>
                         <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive shrink-0" onClick={() => removeItem(idx)}>
                           <X className="h-3.5 w-3.5" />
                         </Button>

@@ -193,21 +193,10 @@ export async function GET() {
     }
   }
 
-  // Default sort: featured first, then stock, then by salesCount desc
-  const data = Object.values(grouped).sort((a, b) => {
-    if (a.featured && !b.featured) return -1
-    if (!a.featured && b.featured) return 1
-    const aHasStock = a.variants.some(v => v.stock > 0)
-    const bHasStock = b.variants.some(v => v.stock > 0)
-    if (aHasStock && !bHasStock) return -1
-    if (!aHasStock && bHasStock) return 1
-    return b.salesCount - a.salesCount
-  })
-
-  // Append visible combos
+  // Build combo entries
   for (const combo of visibleCombos) {
     const comboStock = comboStockMap.get(combo.id) ?? 0
-    data.push({
+    grouped[`combo__${combo.sku}`] = {
       id: `combo__${combo.sku}`,
       name: combo.name,
       brand: 'Combo',
@@ -234,8 +223,23 @@ export async function GET() {
         promoPrice: null,
         promoLabel: null,
       }],
-    })
+    }
   }
+
+  // Sort: banner first, then featured, then stock, then salesCount desc
+  const data = Object.values(grouped).sort((a, b) => {
+    const aBanner = a.bannerName != null
+    const bBanner = b.bannerName != null
+    if (aBanner && !bBanner) return -1
+    if (!aBanner && bBanner) return 1
+    if (a.featured && !b.featured) return -1
+    if (!a.featured && b.featured) return 1
+    const aHasStock = a.variants.some(v => v.stock > 0)
+    const bHasStock = b.variants.some(v => v.stock > 0)
+    if (aHasStock && !bHasStock) return -1
+    if (!aHasStock && bHasStock) return 1
+    return b.salesCount - a.salesCount
+  })
 
   return NextResponse.json(data, {
     headers: {
