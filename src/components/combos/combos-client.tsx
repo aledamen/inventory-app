@@ -31,10 +31,9 @@ type Props = {
 }
 
 type ItemRow = {
-  type: 'fixed' | 'group'
-  productId?: number
-  productGroupName?: string
-  productGroupWeight?: number
+  name: string
+  weight?: number
+  productId?: number  // undefined = todos los sabores (group slot)
   quantity: number
 }
 
@@ -57,15 +56,18 @@ function ComboFormDialog({
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [items, setItems] = useState<ItemRow[]>(
-    combo?.items.map(i => ({
-      type: i.productGroupName ? 'group' as const : 'fixed' as const,
-      productId: i.productId ?? undefined,
-      productGroupName: i.productGroupName ?? undefined,
-      productGroupWeight: i.productGroupWeight ?? undefined,
-      quantity: i.quantity,
-    })) ?? []
-  )
+  function itemsFromCombo(c?: ComboFull): ItemRow[] {
+    if (!c) return []
+    return c.items.map(i => {
+      if (i.productGroupName) {
+        return { name: i.productGroupName, weight: i.productGroupWeight ?? undefined, productId: undefined, quantity: i.quantity }
+      }
+      const p = products.find(p => p.id === i.productId)
+      return { name: p?.name ?? '', weight: p?.weightG ?? undefined, productId: i.productId ?? undefined, quantity: i.quantity }
+    })
+  }
+
+  const [items, setItems] = useState<ItemRow[]>(() => itemsFromCombo(combo))
   const [bannerId, setBannerId] = useState<string>(combo?.bannerId ? String(combo.bannerId) : '')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(combo?.imageUrl ?? null)
@@ -74,13 +76,7 @@ function ComboFormDialog({
   const [priceList, setPriceList] = useState(combo?.priceList ? String(round10(Number(combo.priceList))) : '')
 
   function resetForm() {
-    setItems(combo?.items.map(i => ({
-      type: i.productGroupName ? 'group' as const : 'fixed' as const,
-      productId: i.productId ?? undefined,
-      productGroupName: i.productGroupName ?? undefined,
-      productGroupWeight: i.productGroupWeight ?? undefined,
-      quantity: i.quantity,
-    })) ?? [])
+    setItems(itemsFromCombo(combo))
     setBannerId(combo?.bannerId ? String(combo.bannerId) : '')
     setImageFile(null)
     setImagePreview(combo?.imageUrl ?? null)
@@ -101,9 +97,9 @@ function ComboFormDialog({
   }, [products])
 
   function addItem() {
-    const firstName = productNames[0]
+    const firstName = productNames[0] ?? ''
     const firstWeight = weightsForName.get(firstName)?.[0]
-    setItems(prev => [...prev, { type: 'fixed', productId: products[0]?.id, quantity: 1 }])
+    setItems(prev => [...prev, { name: firstName, weight: firstWeight, productId: undefined, quantity: 1 }])
   }
 
   function handlePriceEffectiveChange(value: string) {
@@ -141,9 +137,9 @@ function ComboFormDialog({
       notes: (fd.get('notes') as string) || undefined,
       bannerId: bannerId ? Number(bannerId) : null,
       items: items.map(item =>
-        item.type === 'group'
-          ? { productGroupName: item.productGroupName!, productGroupWeight: item.productGroupWeight, quantity: item.quantity }
-          : { productId: item.productId!, quantity: item.quantity }
+        item.productId != null
+          ? { productId: item.productId, quantity: item.quantity }
+          : { productGroupName: item.name, productGroupWeight: item.weight, quantity: item.quantity }
       ),
     }
     try {
@@ -177,204 +173,186 @@ function ComboFormDialog({
         ? <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}><Pencil className="h-3.5 w-3.5" /></DialogTrigger>
         : <DialogTrigger render={<Button />}><Plus className="h-4 w-4 mr-2" />Nuevo combo</DialogTrigger>
       }
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{mode === 'edit' ? 'Editar combo' : 'Nuevo combo'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="sku">SKU *</Label>
-              <Input id="sku" name="sku" required defaultValue={combo?.sku} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Nombre *</Label>
-              <Input id="name" name="name" required defaultValue={combo?.name} />
-            </div>
-          </div>
+          <div className="grid md:grid-cols-2 gap-6">
 
-          <div className="space-y-1.5">
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea id="description" name="description" rows={2} defaultValue={combo?.description ?? ''} />
-          </div>
+            {/* Left column — metadata */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="sku">SKU *</Label>
+                  <Input id="sku" name="sku" required defaultValue={combo?.sku} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="name">Nombre *</Label>
+                  <Input id="name" name="name" required defaultValue={combo?.name} />
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="badge">Badge</Label>
-              <Input id="badge" name="badge" placeholder="Promo, Limitado..." defaultValue={combo?.badge ?? ''} />
-            </div>
-            <div className="space-y-1.5 flex flex-col justify-end">
-              <Label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" name="featured" defaultChecked={combo?.featured ?? false} className="h-4 w-4" />
-                Destacado en catálogo
-              </Label>
-            </div>
-          </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="description">Descripción</Label>
+                <Textarea id="description" name="description" rows={2} defaultValue={combo?.description ?? ''} />
+              </div>
 
-          <div className="space-y-1.5">
-            <Label>Banner</Label>
-            <Select value={bannerId} onValueChange={v => setBannerId(v ?? '')}>
-              <SelectTrigger><SelectValue placeholder="Sin banner" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Sin banner</SelectItem>
-                {banners.map(b => (
-                  <SelectItem key={b.id} value={String(b.id)}>
-                    <span className="flex items-center gap-2">
-                      <span
-                        style={{ backgroundColor: b.color }}
-                        className="inline-block w-3 h-3 rounded-sm shrink-0"
-                      />
-                      {b.name}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="badge">Badge</Label>
+                  <Input id="badge" name="badge" placeholder="Promo, Limitado..." defaultValue={combo?.badge ?? ''} />
+                </div>
+                <div className="space-y-1.5 flex flex-col justify-end">
+                  <Label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="featured" defaultChecked={combo?.featured ?? false} className="h-4 w-4" />
+                    Destacado en catálogo
+                  </Label>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="priceEffective">Precio efectivo *</Label>
-              <Input
-                id="priceEffective" name="priceEffective" type="number" step="1" required
-                defaultValue={combo?.priceEffective}
-                onChange={e => handlePriceEffectiveChange(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="priceTransfer">Precio transferencia</Label>
-              <Input
-                id="priceTransfer" name="priceTransfer" type="number" step="1"
-                value={priceTransfer}
-                onChange={e => setPriceTransfer(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="priceList">Precio lista</Label>
-              <Input
-                id="priceList" name="priceList" type="number" step="1"
-                value={priceList}
-                onChange={e => setPriceList(e.target.value)}
-              />
-            </div>
-          </div>
+              <div className="space-y-1.5">
+                <Label>Banner</Label>
+                <Select value={bannerId} onValueChange={v => setBannerId(v ?? '')}>
+                  <SelectTrigger><SelectValue placeholder="Sin banner" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Sin banner</SelectItem>
+                    {banners.map(b => (
+                      <SelectItem key={b.id} value={String(b.id)}>
+                        <span className="flex items-center gap-2">
+                          <span style={{ backgroundColor: b.color }} className="inline-block w-3 h-3 rounded-sm shrink-0" />
+                          {b.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Items section */}
-          <div className="space-y-2">
-            <Label>Productos del combo *</Label>
-            {items.length === 0 && (
-              <p className="text-xs text-muted-foreground">Agregá al menos un producto.</p>
-            )}
-            <div className="space-y-2">
-              {items.map((item, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
-                  <select
-                    className="h-9 rounded-lg border border-input bg-transparent px-2.5 text-xs text-muted-foreground shrink-0"
-                    value={item.type}
-                    onChange={e => {
-                      const t = e.target.value as 'fixed' | 'group'
-                      if (t === 'group') {
-                        const firstName = productNames[0]
-                        const firstWeight = weightsForName.get(firstName)?.[0]
-                        updateItem(idx, { type: 'group', productId: undefined, productGroupName: firstName, productGroupWeight: firstWeight })
-                      } else {
-                        updateItem(idx, { type: 'fixed', productGroupName: undefined, productGroupWeight: undefined, productId: products[0]?.id })
-                      }
-                    }}
-                  >
-                    <option value="fixed">Variante fija</option>
-                    <option value="group">Cualquier variante</option>
-                  </select>
+              <div className="space-y-1.5">
+                <Label htmlFor="notes">Notas</Label>
+                <Textarea id="notes" name="notes" rows={2} defaultValue={combo?.notes ?? ''} />
+              </div>
 
-                  {item.type === 'fixed' ? (
-                    <select
-                      className="flex-1 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                      value={item.productId}
-                      onChange={e => updateItem(idx, { productId: Number(e.target.value) })}
+              <div className="space-y-1.5">
+                <Label>Foto del combo</Label>
+                {imagePreview && (
+                  <div className="flex items-center gap-3">
+                    <img src={imagePreview} alt="preview" className="w-20 h-20 object-cover rounded-lg border border-border" />
+                    <Button
+                      type="button" variant="ghost" size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => { setImagePreview(null); setImageFile(null) }}
                     >
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}{p.weightG ? ` ${p.weightG}g` : ''}{p.flavor ? ' · ' + p.flavor : ''} (stock: {p.stock})
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <>
-                      <select
-                        className="flex-1 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                        value={item.productGroupName ?? ''}
-                        onChange={e => {
-                          const name = e.target.value
-                          const firstW = weightsForName.get(name)?.[0]
-                          updateItem(idx, { productGroupName: name, productGroupWeight: firstW })
-                        }}
-                      >
-                        {productNames.map(name => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </select>
-                      {(weightsForName.get(item.productGroupName ?? '')?.length ?? 0) > 0 && (
+                      <X className="h-3.5 w-3.5 mr-1" />Quitar
+                    </Button>
+                  </div>
+                )}
+                <Input
+                  type="file" accept="image/*" className="cursor-pointer"
+                  onChange={e => {
+                    const f = e.target.files?.[0]
+                    if (f) { setImageFile(f); setImagePreview(URL.createObjectURL(f)) }
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Right column — prices + items */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="priceEffective">Precio efectivo *</Label>
+                  <Input
+                    id="priceEffective" name="priceEffective" type="number" step="1" required
+                    defaultValue={combo?.priceEffective}
+                    onChange={e => handlePriceEffectiveChange(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="priceTransfer">Transferencia</Label>
+                  <Input
+                    id="priceTransfer" name="priceTransfer" type="number" step="1"
+                    value={priceTransfer}
+                    onChange={e => setPriceTransfer(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="priceList">Lista</Label>
+                  <Input
+                    id="priceList" name="priceList" type="number" step="1"
+                    value={priceList}
+                    onChange={e => setPriceList(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Productos del combo *</Label>
+                {items.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Agregá al menos un producto.</p>
+                )}
+                <div className="space-y-2">
+                  {items.map((item, idx) => {
+                    const weights = weightsForName.get(item.name) ?? []
+                    const flavors = products.filter(p =>
+                      p.name === item.name &&
+                      (item.weight == null || p.weightG === item.weight)
+                    )
+                    return (
+                      <div key={idx} className="flex gap-2 items-center flex-wrap">
                         <select
-                          className="w-24 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                          value={item.productGroupWeight ?? ''}
-                          onChange={e => updateItem(idx, { productGroupWeight: e.target.value ? Number(e.target.value) : undefined })}
+                          className="flex-1 min-w-[120px] h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                          value={item.name}
+                          onChange={e => {
+                            const name = e.target.value
+                            const firstW = weightsForName.get(name)?.[0]
+                            updateItem(idx, { name, weight: firstW, productId: undefined })
+                          }}
                         >
-                          {weightsForName.get(item.productGroupName ?? '')?.map(w => (
-                            <option key={w} value={w}>{w}g</option>
+                          {productNames.map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+
+                        {weights.length > 0 && (
+                          <select
+                            className="w-20 h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm shrink-0"
+                            value={item.weight ?? ''}
+                            onChange={e => updateItem(idx, { weight: e.target.value ? Number(e.target.value) : undefined, productId: undefined })}
+                          >
+                            {weights.map(w => <option key={w} value={w}>{w}g</option>)}
+                          </select>
+                        )}
+
+                        <select
+                          className="flex-1 min-w-[130px] h-9 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                          value={item.productId ?? ''}
+                          onChange={e => updateItem(idx, { productId: e.target.value ? Number(e.target.value) : undefined })}
+                        >
+                          <option value="">Todos los sabores</option>
+                          {flavors.map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.flavor ?? p.name}{p.stock <= 0 ? ' (sin stock)' : ` (${p.stock})`}
+                            </option>
                           ))}
                         </select>
-                      )}
-                    </>
-                  )}
 
-                  <Input
-                    type="number"
-                    min={1}
-                    className="w-20"
-                    value={item.quantity}
-                    onChange={e => updateItem(idx, { quantity: Math.max(1, Number(e.target.value)) })}
-                  />
-                  <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive shrink-0" onClick={() => removeItem(idx)}>
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
+                        <Input
+                          type="number" min={1} className="w-16 shrink-0"
+                          value={item.quantity}
+                          onChange={e => updateItem(idx, { quantity: Math.max(1, Number(e.target.value)) })}
+                        />
+                        <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive shrink-0" onClick={() => removeItem(idx)}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )
+                  })}
                 </div>
-              ))}
-            </div>
-            <Button type="button" variant="outline" size="sm" onClick={addItem}>
-              <Plus className="h-3.5 w-3.5 mr-1" />Agregar producto
-            </Button>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Foto del combo</Label>
-            {imagePreview && (
-              <div className="flex items-center gap-3">
-                <img src={imagePreview} alt="preview" className="w-20 h-20 object-cover rounded-lg border border-border" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => { setImagePreview(null); setImageFile(null) }}
-                >
-                  <X className="h-3.5 w-3.5 mr-1" />Quitar
+                <Button type="button" variant="outline" size="sm" onClick={addItem}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />Agregar producto
                 </Button>
               </div>
-            )}
-            <Input
-              type="file"
-              accept="image/*"
-              className="cursor-pointer"
-              onChange={e => {
-                const f = e.target.files?.[0]
-                if (f) { setImageFile(f); setImagePreview(URL.createObjectURL(f)) }
-              }}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="notes">Notas</Label>
-            <Textarea id="notes" name="notes" rows={2} defaultValue={combo?.notes ?? ''} />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

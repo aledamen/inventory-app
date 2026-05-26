@@ -11,6 +11,10 @@ import { Label } from '@/components/ui/label'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import {
+  Combobox, ComboboxInput, ComboboxContent, ComboboxList,
+  ComboboxItem, ComboboxEmpty,
+} from '@/components/ui/combobox'
 import { Textarea } from '@/components/ui/textarea'
 import { createSale } from '@/actions/sales'
 import { createComboSale } from '@/actions/combos'
@@ -19,13 +23,16 @@ import type { ComboFull } from '@/actions/combos'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
+type Client = { id: number; name: string; phone: string | null }
+
 type Props = {
   products: ProductWithRelations[]
   lookups: { paymentMethods: {id:number,name:string}[] }
   combos?: ComboFull[]
+  clients?: Client[]
 }
 
-export function SaleFormDialog({ products, lookups, combos = [] }: Props) {
+export function SaleFormDialog({ products, lookups, combos = [], clients = [] }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -34,6 +41,7 @@ export function SaleFormDialog({ products, lookups, combos = [] }: Props) {
   const [selectedCombo, setSelectedCombo] = useState<ComboFull | null>(null)
   const [groupSelections, setGroupSelections] = useState<{ itemId: number; productId: number }[]>([])
   const [comboPrice, setComboPrice] = useState('')
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
 
   const availableProducts = products.filter(p => p.stock > 0)
   const availableCombos = combos.filter(c => c.availableStock > 0)
@@ -64,6 +72,7 @@ export function SaleFormDialog({ products, lookups, combos = [] }: Props) {
     setSelectedCombo(null)
     setGroupSelections([])
     setComboPrice('')
+    setSelectedClientId(null)
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -80,6 +89,7 @@ export function SaleFormDialog({ products, lookups, combos = [] }: Props) {
           paymentMethodId: fd.get('paymentMethodId') ? Number(fd.get('paymentMethodId')) : undefined,
           notes: (fd.get('notes') as string) || undefined,
           date: fd.get('date') ? new Date(fd.get('date') as string) : new Date(),
+          clientId: selectedClientId ?? undefined,
           groupSelections,
         })
       } else {
@@ -90,6 +100,7 @@ export function SaleFormDialog({ products, lookups, combos = [] }: Props) {
           paymentMethodId: fd.get('paymentMethodId') ? Number(fd.get('paymentMethodId')) : undefined,
           notes: (fd.get('notes') as string) || undefined,
           date: fd.get('date') ? new Date(fd.get('date') as string) : new Date(),
+          clientId: selectedClientId ?? undefined,
         })
       }
       toast.success('Venta registrada')
@@ -250,6 +261,28 @@ export function SaleFormDialog({ products, lookups, combos = [] }: Props) {
                 </div>
               )}
             </>
+          )}
+
+          {clients.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Cliente</Label>
+              <Combobox
+                value={selectedClientId}
+                onValueChange={v => setSelectedClientId(v as number | null)}
+              >
+                <ComboboxInput showClear placeholder="Buscar cliente..." className="w-full" />
+                <ComboboxContent>
+                  <ComboboxList>
+                    <ComboboxEmpty>Sin resultados</ComboboxEmpty>
+                    {clients.map(c => (
+                      <ComboboxItem key={c.id} value={c.id}>
+                        {c.name}{c.phone ? ` · ${c.phone}` : ''}
+                      </ComboboxItem>
+                    ))}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">

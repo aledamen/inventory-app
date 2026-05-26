@@ -37,6 +37,7 @@ export async function createSale(data: {
   paymentMethodId?: number
   notes?: string
   date: Date
+  clientId?: number
 }) {
   const product = await db
     .select({ stock: products.stock, cost: pricing.totalCost })
@@ -69,6 +70,7 @@ export async function createSale(data: {
     totalCost: String(totalCost),
     netProfit: String(netProfit),
     grossProfit: String(saleValue),
+    clientId: data.clientId ?? null,
     paymentMethodId: data.paymentMethodId,
     notes: data.notes,
     date: data.date,

@@ -290,6 +290,7 @@ export async function createComboSale(data: {
   paymentMethodId?: number
   notes?: string
   date: Date
+  clientId?: number
   groupSelections: { itemId: number; productId: number }[]
 }) {
   const items = await db
@@ -368,6 +369,7 @@ export async function createComboSale(data: {
       totalCost: String(totalCostLine),
       netProfit: String(netProfit),
       grossProfit: String(saleValue),
+      clientId: data.clientId ?? null,
       paymentMethodId: data.paymentMethodId ?? null,
       notes: data.notes ?? null,
       date: data.date,
