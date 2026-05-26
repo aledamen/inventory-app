@@ -25,6 +25,10 @@ const DEFAULTS: Record<string, string> = {
   nav_checkout_label: 'Checkout',
   logo_url: '',
   logo_width: '340',
+  stock_urgency_enabled: 'false',
+  stock_urgency_threshold: '5',
+  featured_section_enabled: 'false',
+  featured_section_title: 'Destacados',
 }
 
 export async function getSiteConfig(): Promise<Record<string, string>> {

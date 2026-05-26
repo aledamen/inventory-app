@@ -822,6 +822,10 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
   const [navCatalogoLabel, setNavCatalogoLabel] = useState(config.nav_catalogo_label ?? 'Catálogo')
   const [navCarritoLabel, setNavCarritoLabel] = useState(config.nav_carrito_label ?? 'Carrito')
   const [navCheckoutLabel, setNavCheckoutLabel] = useState(config.nav_checkout_label ?? 'Checkout')
+  const [stockUrgencyEnabled, setStockUrgencyEnabled] = useState(config.stock_urgency_enabled === 'true')
+  const [stockUrgencyThreshold, setStockUrgencyThreshold] = useState(config.stock_urgency_threshold ?? '5')
+  const [featuredEnabled, setFeaturedEnabled] = useState(config.featured_section_enabled === 'true')
+  const [featuredTitle, setFeaturedTitle] = useState(config.featured_section_title ?? 'Destacados')
 
   async function handleSave() {
     setLoading(true)
@@ -846,6 +850,10 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
         nav_catalogo_label: navCatalogoLabel,
         nav_carrito_label: navCarritoLabel,
         nav_checkout_label: navCheckoutLabel,
+        stock_urgency_enabled: stockUrgencyEnabled ? 'true' : 'false',
+        stock_urgency_threshold: stockUrgencyThreshold,
+        featured_section_enabled: featuredEnabled ? 'true' : 'false',
+        featured_section_title: featuredTitle,
       })
       toast.success('Configuración guardada')
       router.refresh()
@@ -1099,6 +1107,63 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
               {announcementText}
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Urgencia de stock</h3>
+        <div className="space-y-3 bg-card rounded-xl border border-border p-4">
+          <Label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={stockUrgencyEnabled}
+              onChange={e => setStockUrgencyEnabled(e.target.checked)}
+              className="h-4 w-4"
+            />
+            Mostrar aviso "¡Quedan X!" en el catálogo
+          </Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="urgency-threshold">Mostrar aviso cuando el stock sea menor o igual a</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="urgency-threshold"
+                type="number"
+                min="1"
+                max="99"
+                value={stockUrgencyThreshold}
+                onChange={e => setStockUrgencyThreshold(e.target.value)}
+                disabled={!stockUrgencyEnabled}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">unidades</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sección destacados</h3>
+        <div className="space-y-3 bg-card rounded-xl border border-border p-4">
+          <Label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={featuredEnabled}
+              onChange={e => setFeaturedEnabled(e.target.checked)}
+              className="h-4 w-4"
+            />
+            Mostrar sección de productos destacados en el catálogo
+          </Label>
+          <p className="text-xs text-muted-foreground">Los productos que aparecen son los marcados como "Destacado" desde el dashboard de productos.</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="featured-title">Título de la sección</Label>
+            <Input
+              id="featured-title"
+              value={featuredTitle}
+              onChange={e => setFeaturedTitle(e.target.value)}
+              disabled={!featuredEnabled}
+              placeholder="Destacados"
+            />
+          </div>
         </div>
       </div>
 
