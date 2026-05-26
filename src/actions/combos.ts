@@ -150,73 +150,70 @@ type ComboInput = {
   items: { productId: number; quantity: number }[]
 }
 
-export async function createCombo(data: ComboInput) {
-  await db.transaction(async (tx) => {
-    const [combo] = await tx
-      .insert(combos)
-      .values({
-        sku: data.sku,
-        name: data.name,
-        description: data.description ?? null,
-        badge: data.badge ?? null,
-        featured: data.featured ?? false,
-        visible: data.visible ?? false,
-        priceEffective: String(data.priceEffective),
-        priceTransfer: data.priceTransfer != null ? String(data.priceTransfer) : null,
-        priceList: data.priceList != null ? String(data.priceList) : null,
-        notes: data.notes ?? null,
-        bannerId: data.bannerId ?? null,
-      })
-      .returning({ id: combos.id })
+export async function createCombo(data: ComboInput): Promise<{ id: number }> {
+  const [combo] = await db
+    .insert(combos)
+    .values({
+      sku: data.sku,
+      name: data.name,
+      description: data.description ?? null,
+      badge: data.badge ?? null,
+      featured: data.featured ?? false,
+      visible: data.visible ?? false,
+      priceEffective: String(data.priceEffective),
+      priceTransfer: data.priceTransfer != null ? String(data.priceTransfer) : null,
+      priceList: data.priceList != null ? String(data.priceList) : null,
+      notes: data.notes ?? null,
+      bannerId: data.bannerId ?? null,
+    })
+    .returning({ id: combos.id })
 
+  if (data.items.length > 0) {
+    await db.insert(comboItems).values(
+      data.items.map(item => ({
+        comboId: combo.id,
+        productId: item.productId,
+        quantity: item.quantity,
+      }))
+    )
+  }
+
+  revalidatePath('/dashboard/combos')
+  revalidatePath('/api/catalog')
+  return { id: combo.id }
+}
+
+export async function updateCombo(id: number, data: Partial<ComboInput>) {
+  await db
+    .update(combos)
+    .set({
+      ...(data.sku !== undefined && { sku: data.sku }),
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.badge !== undefined && { badge: data.badge }),
+      ...(data.featured !== undefined && { featured: data.featured }),
+      ...(data.visible !== undefined && { visible: data.visible }),
+      ...(data.priceEffective !== undefined && { priceEffective: String(data.priceEffective) }),
+      ...(data.priceTransfer !== undefined && { priceTransfer: data.priceTransfer != null ? String(data.priceTransfer) : null }),
+      ...(data.priceList !== undefined && { priceList: data.priceList != null ? String(data.priceList) : null }),
+      ...(data.notes !== undefined && { notes: data.notes }),
+      ...('bannerId' in data && { bannerId: data.bannerId ?? null }),
+      updatedAt: new Date(),
+    })
+    .where(eq(combos.id, id))
+
+  if (data.items !== undefined) {
+    await db.delete(comboItems).where(eq(comboItems.comboId, id))
     if (data.items.length > 0) {
-      await tx.insert(comboItems).values(
+      await db.insert(comboItems).values(
         data.items.map(item => ({
-          comboId: combo.id,
+          comboId: id,
           productId: item.productId,
           quantity: item.quantity,
         }))
       )
     }
-  })
-
-  revalidatePath('/dashboard/combos')
-  revalidatePath('/api/catalog')
-}
-
-export async function updateCombo(id: number, data: Partial<ComboInput>) {
-  await db.transaction(async (tx) => {
-    await tx
-      .update(combos)
-      .set({
-        ...(data.sku !== undefined && { sku: data.sku }),
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.description !== undefined && { description: data.description }),
-        ...(data.badge !== undefined && { badge: data.badge }),
-        ...(data.featured !== undefined && { featured: data.featured }),
-        ...(data.visible !== undefined && { visible: data.visible }),
-        ...(data.priceEffective !== undefined && { priceEffective: String(data.priceEffective) }),
-        ...(data.priceTransfer !== undefined && { priceTransfer: data.priceTransfer != null ? String(data.priceTransfer) : null }),
-        ...(data.priceList !== undefined && { priceList: data.priceList != null ? String(data.priceList) : null }),
-        ...(data.notes !== undefined && { notes: data.notes }),
-        ...('bannerId' in data && { bannerId: data.bannerId ?? null }),
-        updatedAt: new Date(),
-      })
-      .where(eq(combos.id, id))
-
-    if (data.items !== undefined) {
-      await tx.delete(comboItems).where(eq(comboItems.comboId, id))
-      if (data.items.length > 0) {
-        await tx.insert(comboItems).values(
-          data.items.map(item => ({
-            comboId: id,
-            productId: item.productId,
-            quantity: item.quantity,
-          }))
-        )
-      }
-    }
-  })
+  }
 
   revalidatePath('/dashboard/combos')
   revalidatePath('/api/catalog')

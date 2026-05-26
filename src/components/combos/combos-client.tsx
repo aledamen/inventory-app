@@ -16,7 +16,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { createCombo, updateCombo, deleteCombo, toggleComboVisible } from '@/actions/combos'
+import { createCombo, updateCombo, deleteCombo, toggleComboVisible, uploadComboImage } from '@/actions/combos'
 import type { ComboFull } from '@/actions/combos'
 import type { ProductWithRelations } from '@/types'
 import { Plus, Pencil, Trash2, Eye, EyeOff, X } from 'lucide-react'
@@ -58,10 +58,14 @@ function ComboFormDialog({
     combo?.items.map(i => ({ productId: i.productId, quantity: i.quantity })) ?? []
   )
   const [bannerId, setBannerId] = useState<string>(combo?.bannerId ? String(combo.bannerId) : '')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(combo?.imageUrl ?? null)
 
   function resetForm() {
     setItems(combo?.items.map(i => ({ productId: i.productId, quantity: i.quantity })) ?? [])
     setBannerId(combo?.bannerId ? String(combo.bannerId) : '')
+    setImageFile(null)
+    setImagePreview(combo?.imageUrl ?? null)
   }
 
   function addItem() {
@@ -98,12 +102,20 @@ function ComboFormDialog({
       items,
     }
     try {
+      let comboId: number
       if (mode === 'edit' && combo) {
         await updateCombo(combo.id, data)
+        comboId = combo.id
         toast.success('Combo actualizado')
       } else {
-        await createCombo(data)
+        const result = await createCombo(data)
+        comboId = result.id
         toast.success('Combo creado')
+      }
+      if (imageFile) {
+        const imgFd = new FormData()
+        imgFd.append('file', imageFile)
+        await uploadComboImage(comboId, imgFd)
       }
       setOpen(false)
       router.refresh()
@@ -226,6 +238,33 @@ function ComboFormDialog({
             <Button type="button" variant="outline" size="sm" onClick={addItem}>
               <Plus className="h-3.5 w-3.5 mr-1" />Agregar producto
             </Button>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Foto del combo</Label>
+            {imagePreview && (
+              <div className="flex items-center gap-3">
+                <img src={imagePreview} alt="preview" className="w-20 h-20 object-cover rounded-lg border border-border" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => { setImagePreview(null); setImageFile(null) }}
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />Quitar
+                </Button>
+              </div>
+            )}
+            <Input
+              type="file"
+              accept="image/*"
+              className="cursor-pointer"
+              onChange={e => {
+                const f = e.target.files?.[0]
+                if (f) { setImageFile(f); setImagePreview(URL.createObjectURL(f)) }
+              }}
+            />
           </div>
 
           <div className="space-y-1.5">
