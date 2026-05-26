@@ -18,6 +18,7 @@ export const products = pgTable('products', {
   imageUrl: text('image_url'),
   visible: boolean('visible').default(false),
   notes: text('notes'),
+  size: text('size'),
   description: text('description'),
   badge: varchar('badge', { length: 50 }),
   featured: boolean('featured').default(false).notNull(),

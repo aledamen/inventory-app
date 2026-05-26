@@ -4,6 +4,7 @@ export type ProductWithRelations = {
   name: string
   flavor: string | null
   weightG: number | null
+  size: string | null
   cost: string
   stock: number
   stockMin: number | null

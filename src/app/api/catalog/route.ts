@@ -27,6 +27,7 @@ export async function GET() {
         visible: products.visible,
         imageUrl: products.imageUrl,
         weightG: products.weightG,
+        size: products.size,
         description: products.description,
         badge: products.badge,
         featured: products.featured,
@@ -114,7 +115,7 @@ export async function GET() {
     if (!grouped[key]) {
       grouped[key] = {
         id: key,
-        name: row.weightG ? `${row.name} ${row.weightG}g` : row.name,
+        name: row.size ? `${row.name} ${row.size}` : (row.weightG ? `${row.name} ${row.weightG}g` : row.name),
         brand: row.brand,
         category: row.category,
         image: row.imageUrl,

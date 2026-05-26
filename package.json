@@ -12,7 +12,8 @@
     "db:push": "node --env-file=.env.local ./node_modules/.bin/drizzle-kit push",
     "db:studio": "node --env-file=.env.local ./node_modules/.bin/drizzle-kit studio",
     "db:migrate:excel": "node --env-file=.env.local ./node_modules/.bin/tsx scripts/migrate.ts",
-    "images:upload": "node --env-file=.env.local ./node_modules/.bin/tsx scripts/upload-images.ts"
+    "images:upload": "node --env-file=.env.local ./node_modules/.bin/tsx scripts/upload-images.ts",
+    "db:seed:sizes": "node --env-file=.env.local ./node_modules/.bin/tsx scripts/seed-sizes.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

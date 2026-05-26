@@ -57,6 +57,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
       stockMin: fd.get('stockMin') ? Number(fd.get('stockMin')) : undefined,
       type: fd.get('type') as string || 'estandar',
       notes: fd.get('notes') as string || undefined,
+      size: fd.get('size') as string || undefined,
       description: fd.get('description') as string || undefined,
       badge: (fd.get('badge') as string) || null,
       featured: fd.get('featured') === 'on',
@@ -259,9 +260,14 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="weightG">Peso (g)</Label>
+              <Label htmlFor="weightG">Peso (g) — envío</Label>
               <Input id="weightG" name="weightG" type="number" defaultValue={product?.weightG ?? ''} />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="size">Presentación (catálogo)</Label>
+            <Input id="size" name="size" placeholder="60 caps, 300g, 2lb, 500ml..." defaultValue={product?.size ?? ''} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -13,6 +13,7 @@ export async function getProducts() {
       name: products.name,
       flavor: flavors.name,
       weightG: products.weightG,
+      size: products.size,
       cost: products.cost,
       stock: products.stock,
       stockMin: products.stockMin,
@@ -60,6 +61,7 @@ export async function createProduct(data: {
   brandId?: number
   flavorId?: number
   weightG?: number
+  size?: string
   stockMin?: number
   type?: string
   bagAssigned?: string
@@ -81,6 +83,7 @@ export async function updateProduct(id: number, data: Partial<{
   brandId: number
   flavorId: number
   weightG: number
+  size: string
   stockMin: number
   type: string
   bagAssigned: string
