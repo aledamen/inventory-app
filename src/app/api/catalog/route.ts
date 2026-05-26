@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/db'
 import { products, pricing, categories, brands, flavors, sales, promotions, combos, comboItems, banners } from '@/db/schema'
-import { eq, and, or, isNull, gte, inArray } from 'drizzle-orm'
+import { eq, and, or, isNull, gte, inArray, asc } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 
 export const revalidate = 60
@@ -188,6 +188,7 @@ export async function GET() {
       .from(comboItems)
       .leftJoin(products, eq(comboItems.productId, products.id))
       .where(inArray(comboItems.comboId, comboIds))
+      .orderBy(asc(comboItems.id))
 
     // For group slots, fetch individual products with their flavors
     const groupSlots = comboItemRows.filter(r => r.productGroupName)
