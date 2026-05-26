@@ -38,7 +38,8 @@ export function SaleFormDialog({ products, lookups, combos = [] }: Props) {
   const availableProducts = products.filter(p => p.stock > 0)
   const availableCombos = combos.filter(c => c.availableStock > 0)
 
-  function handleComboChange(comboId: string) {
+  function handleComboChange(comboId: string | null) {
+    if (!comboId) return
     const combo = availableCombos.find(c => c.id === Number(comboId)) ?? null
     setSelectedCombo(combo)
     setComboPrice(combo ? String(Number(combo.priceEffective)) : '')
