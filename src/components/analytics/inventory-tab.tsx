@@ -12,18 +12,20 @@ const $ = (n: string | number | null) => n !== null ? `$${Math.round(Number(n)).
 
 export function InventoryTab({ inventory }: { inventory: Row[] }) {
   const totalAtCost = inventory.reduce((a, r) => a + Number(r.valueAtCost), 0)
-  const totalAtList = inventory.reduce((a, r) => a + Number(r.valueAtList), 0)
+  const totalAtCash = inventory.reduce((a, r) => a + Number(r.valueAtCash), 0)
   const totalPotential = inventory.reduce((a, r) => a + Number(r.potentialProfit), 0)
   const totalUnits = inventory.reduce((a, r) => a + r.stock, 0)
+  // margen = ganancia potencial / costo (markup sobre costo, como en la planilla)
+  const markup = totalAtCost > 0 ? totalPotential / totalAtCost : 0
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: 'Unidades en stock', value: totalUnits.toLocaleString('es-AR') },
-          { label: 'Valorizado al costo', value: $(totalAtCost) },
-          { label: 'Valor al precio lista', value: $(totalAtList) },
-          { label: 'Ganancia potencial', value: $(totalPotential), color: 'text-green-700' },
+          { label: 'Total al costo', value: $(totalAtCost) },
+          { label: 'Total al precio', value: $(totalAtCash) },
+          { label: 'Ganancia potencial', value: `${$(totalPotential)} (${(markup * 100).toFixed(1)}%)`, color: 'text-green-700' },
         ].map(k => (
           <div key={k.label} className="bg-card rounded-xl border border-border p-4">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{k.label}</p>
@@ -41,7 +43,7 @@ export function InventoryTab({ inventory }: { inventory: Row[] }) {
               <TableHead className="text-right">Stock</TableHead>
               <TableHead className="text-right">Costo unitario</TableHead>
               <TableHead className="text-right">Valor al costo</TableHead>
-              <TableHead className="text-right">Precio lista</TableHead>
+              <TableHead className="text-right">Precio efectivo</TableHead>
               <TableHead className="text-right">Valor al precio</TableHead>
               <TableHead className="text-right">Ganancia potencial</TableHead>
             </TableRow>
@@ -69,8 +71,8 @@ export function InventoryTab({ inventory }: { inventory: Row[] }) {
                 </TableCell>
                 <TableCell className="text-right tabular-nums text-muted-foreground">{$(row.totalCost)}</TableCell>
                 <TableCell className="text-right tabular-nums font-medium">{$(row.valueAtCost)}</TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">{row.priceListRounded ? `$${row.priceListRounded.toLocaleString('es-AR')}` : '—'}</TableCell>
-                <TableCell className="text-right tabular-nums">{$(row.valueAtList)}</TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">{row.priceCashRounded ? `$${row.priceCashRounded.toLocaleString('es-AR')}` : '—'}</TableCell>
+                <TableCell className="text-right tabular-nums">{$(row.valueAtCash)}</TableCell>
                 <TableCell className="text-right tabular-nums text-green-700">{$(row.potentialProfit)}</TableCell>
               </TableRow>
             ))}
@@ -81,8 +83,11 @@ export function InventoryTab({ inventory }: { inventory: Row[] }) {
                 <TableCell />
                 <TableCell className="text-right tabular-nums">{$(totalAtCost)}</TableCell>
                 <TableCell />
-                <TableCell className="text-right tabular-nums">{$(totalAtList)}</TableCell>
-                <TableCell className="text-right tabular-nums text-green-700">{$(totalPotential)}</TableCell>
+                <TableCell className="text-right tabular-nums">{$(totalAtCash)}</TableCell>
+                <TableCell className="text-right tabular-nums text-green-700">
+                  {$(totalPotential)}{' '}
+                  <span className="text-xs font-normal">({(markup * 100).toFixed(1)}%)</span>
+                </TableCell>
               </TableRow>
             )}
           </TableBody>

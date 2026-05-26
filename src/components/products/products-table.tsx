@@ -180,6 +180,20 @@ export function ProductsTable({ products, lookups }: Props) {
                 </TableCell>
               </TableRow>
             ))}
+            {filtered.length > 0 && (() => {
+              const totalStock = filtered.reduce((a, p) => a + p.stock, 0)
+              return (
+                <TableRow className="border-t-2 font-semibold bg-muted/40">
+                  <TableCell />
+                  <TableCell colSpan={4} className="text-muted-foreground text-xs">{filtered.length} productos</TableCell>
+                  <TableCell />
+                  <TableCell className="text-center tabular-nums">
+                    <Badge variant="secondary">{totalStock}</Badge>
+                  </TableCell>
+                  <TableCell colSpan={2} />
+                </TableRow>
+              )
+            })()}
           </TableBody>
         </Table>
       </div>

@@ -168,6 +168,25 @@ export function SalesTable({ sales, products, lookups }: Props) {
                 </TableCell>
               </TableRow>
             ))}
+            {filtered.length > 0 && (() => {
+              const totalQty = filtered.reduce((a, s) => a + s.quantity, 0)
+              const totalRev = filtered.reduce((a, s) => a + Number(s.totalSale ?? 0), 0)
+              const totalProfit = filtered.reduce((a, s) => a + Number(s.netProfit ?? 0), 0)
+              const uniqueSales = new Set(filtered.map(s => s.saleNumber)).size
+              return (
+                <TableRow className="border-t-2 font-semibold bg-muted/40">
+                  <TableCell colSpan={2} className="text-muted-foreground text-xs">
+                    {filtered.length} filas · {uniqueSales} ventas
+                  </TableCell>
+                  <TableCell colSpan={2} />
+                  <TableCell className="text-right tabular-nums">{totalQty}</TableCell>
+                  <TableCell />
+                  <TableCell className="text-right tabular-nums">${totalRev.toLocaleString('es-AR')}</TableCell>
+                  <TableCell className="text-right tabular-nums text-green-700">${totalProfit.toLocaleString('es-AR')}</TableCell>
+                  <TableCell colSpan={2} />
+                </TableRow>
+              )
+            })()}
           </TableBody>
         </Table>
       </div>

@@ -32,25 +32,28 @@ export async function getAnalyticsSummary(from?: string, to?: string) {
 
   const [salesRow, expensesRow] = await Promise.all([
     db.select({
-      totalRevenue: sql<string>`coalesce(sum(${sales.totalSale}), 0)`,
+      // sale_value = precio_efectivo × cantidad por fila (no total_sale que duplica)
+      totalRevenue: sql<string>`coalesce(sum(${sales.saleValue}), 0)`,
       totalNetProfitStored: sql<string>`coalesce(sum(${sales.netProfit}), 0)`,
       totalCost: sql<string>`coalesce(sum(${sales.totalCost}), 0)`,
       totalUnits: sql<number>`coalesce(sum(${sales.quantity}), 0)`,
       txCount: sql<number>`count(distinct ${sales.saleNumber})`,
-      avgMargin: sql<string>`coalesce(sum(${sales.netProfit}) / nullif(sum(${sales.totalSale}), 0), 0)`,
+      // margen = ganancia / facturación (sobre revenue, no markup sobre costo)
+      avgMargin: sql<string>`coalesce(sum(${sales.netProfit}) / nullif(sum(${sales.saleValue}), 0), 0)`,
     }).from(sales).where(where),
     db.select({ total: sql<string>`coalesce(sum(${expenses.total}), 0)` }).from(expenses).where(expensesWhere),
   ])
 
   const rev = Number(salesRow[0]?.totalRevenue ?? 0)
   const storedNetProfit = Number(salesRow[0]?.totalNetProfitStored ?? 0)
-  const grossProfit = rev - Number(salesRow[0]?.totalCost ?? 0)
   const totalExp = Number(expensesRow[0]?.total ?? 0)
 
   return {
     totalRevenue: rev,
-    totalGrossProfit: grossProfit,
+    // ganancia de ventas (antes de gastos) = SUM(net_profit per row)
+    totalGrossProfit: storedNetProfit,
     totalExpenses: totalExp,
+    // ganancia actual = ganancia ventas - gastos operativos
     totalNetProfit: storedNetProfit - totalExp,
     avgMargin: Number(salesRow[0]?.avgMargin ?? 0),
     totalUnits: Number(salesRow[0]?.totalUnits ?? 0),
@@ -73,17 +76,17 @@ export async function getSalesRanking(from?: string, to?: string) {
     productSku: products.sku,
     productFlavor: flavors.name,
     totalUnits: sql<number>`sum(${sales.quantity})`,
-    totalRevenue: sql<string>`sum(${sales.totalSale})`,
+    totalRevenue: sql<string>`sum(${sales.saleValue})`,
     totalProfit: sql<string>`sum(${sales.netProfit})`,
-    txCount: sql<number>`count(*)`,
-    avgMargin: sql<string>`sum(${sales.netProfit}) / nullif(sum(${sales.totalSale}), 0)`,
+    txCount: sql<number>`count(distinct ${sales.saleNumber})`,
+    avgMargin: sql<string>`sum(${sales.netProfit}) / nullif(sum(${sales.saleValue}), 0)`,
   })
     .from(sales)
     .innerJoin(products, eq(sales.productId, products.id))
     .leftJoin(flavors, eq(products.flavorId, flavors.id))
     .where(conds.length ? and(...conds) : undefined)
     .groupBy(sales.productId, products.name, products.sku, flavors.name)
-    .orderBy(desc(sql`sum(${sales.totalSale})`))
+    .orderBy(desc(sql`sum(${sales.saleValue})`))
 }
 
 export type PeriodGroup = 'day' | 'week' | 'month' | 'year'
@@ -104,11 +107,11 @@ export async function getSalesByPeriod(groupBy: PeriodGroup, from?: string, to?:
   const result = await db.execute<Row>(sql`
     SELECT
       date_trunc(${groupBy}, "sales"."date") AS period,
-      coalesce(sum(total_sale), 0)           AS revenue,
+      coalesce(sum(sale_value), 0)           AS revenue,
       coalesce(sum(net_profit), 0)           AS profit,
       coalesce(sum(quantity), 0)             AS units,
       count(distinct sale_number)            AS tx_count,
-      coalesce(sum(net_profit) / nullif(sum(total_sale), 0), 0) AS avg_margin
+      coalesce(sum(net_profit) / nullif(sum(sale_value), 0), 0) AS avg_margin
     FROM sales
     ${whereClause}
     GROUP BY 1
@@ -139,7 +142,7 @@ export async function getStockInventoryValue() {
     valueAtCost: sql<string>`${products.stock} * coalesce(${pricing.totalCost}::numeric, 0)`,
     valueAtCash: sql<string>`${products.stock} * coalesce(${pricing.priceCashRounded}, 0)`,
     valueAtList: sql<string>`${products.stock} * coalesce(${pricing.priceListRounded}, 0)`,
-    potentialProfit: sql<string>`(${products.stock} * coalesce(${pricing.priceListRounded}, 0)) - (${products.stock} * coalesce(${pricing.totalCost}::numeric, 0))`,
+    potentialProfit: sql<string>`(${products.stock} * coalesce(${pricing.priceCashRounded}, 0)) - (${products.stock} * coalesce(${pricing.totalCost}::numeric, 0))`,
   })
     .from(products)
     .leftJoin(pricing, eq(products.id, pricing.productId))

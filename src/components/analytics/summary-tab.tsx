@@ -32,12 +32,12 @@ export function SummaryTab({ summary, expensesByType }: Props) {
   } = summary
 
   const kpis: KPI[] = [
-    { label: 'Ingresos totales', value: $(totalRevenue), sub: `${txCount} ventas · ${totalUnits} unidades` },
+    { label: 'Facturación', value: $(totalRevenue), sub: `${txCount} ventas · ${totalUnits} unidades` },
     { label: 'Costo total vendido', value: $(totalCost), sub: 'Costo de los productos vendidos' },
-    { label: 'Ganancia bruta', value: $(totalGrossProfit), sub: `Margen promedio ${pct(avgMargin)}`, color: 'text-green-700' },
+    { label: 'Ganancia de ventas', value: $(totalGrossProfit), sub: `Antes de gastos · margen ${pct(avgMargin)}`, color: 'text-green-700' },
     { label: 'Gastos del período', value: $(totalExpenses), color: 'text-orange-600' },
-    { label: 'Ganancia neta', value: $(totalNetProfit), sub: 'Bruta − gastos', color: totalNetProfit >= 0 ? 'text-green-700' : 'text-destructive' },
-    { label: 'Margen promedio', value: pct(avgMargin), sub: 'Sobre ingresos' },
+    { label: 'Ganancia neta', value: $(totalNetProfit), sub: 'Ganancia ventas − gastos', color: totalNetProfit >= 0 ? 'text-green-700' : 'text-destructive' },
+    { label: 'Margen promedio', value: pct(avgMargin), sub: 'Sobre facturación' },
   ]
 
   return (

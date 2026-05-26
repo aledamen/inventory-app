@@ -95,6 +95,25 @@ export function RankingsTab({ ranking }: { ranking: Row[] }) {
                 </TableRow>
               )
             })}
+            {sorted.length > 0 && (() => {
+              const totRev = sorted.reduce((a, r) => a + Number(r.totalRevenue), 0)
+              const totUnits = sorted.reduce((a, r) => a + Number(r.totalUnits), 0)
+              const totProfit = sorted.reduce((a, r) => a + Number(r.totalProfit), 0)
+              const totSales = sorted.reduce((a, r) => a + Number(r.txCount), 0)
+              const avgM = totRev > 0 ? totProfit / totRev : 0
+              return (
+                <TableRow className="border-t-2 font-semibold bg-muted/40">
+                  <TableCell colSpan={2} className="text-muted-foreground text-xs">{sorted.length} productos</TableCell>
+                  <TableCell className="text-right tabular-nums">{$(totRev)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{totUnits}</TableCell>
+                  <TableCell className="text-right tabular-nums text-green-700">{$(totProfit)}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    <Badge variant="secondary">{(avgM * 100).toFixed(1)}%</Badge>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">{totSales}</TableCell>
+                </TableRow>
+              )
+            })()}
           </TableBody>
         </Table>
       </div>
