@@ -89,6 +89,7 @@ export async function createSale(data: {
 
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/clients')
 }
 
 export async function updateSale(id: number, data: {
@@ -147,6 +148,7 @@ export async function updateSale(id: number, data: {
 
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/clients')
 }
 
 export async function deleteSale(id: number) {
@@ -160,4 +162,5 @@ export async function deleteSale(id: number) {
 
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/clients')
 }
