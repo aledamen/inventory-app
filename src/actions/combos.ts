@@ -237,6 +237,7 @@ export async function updateCombo(id: number, data: Partial<ComboInput>) {
           comboId: id,
           productId: item.productId ?? null,
           productGroupName: item.productGroupName ?? null,
+          productGroupWeight: item.productGroupWeight ?? null,
           quantity: item.quantity,
         }))
       )

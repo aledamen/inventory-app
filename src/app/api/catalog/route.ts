@@ -166,25 +166,47 @@ export async function GET() {
     .leftJoin(banners, eq(combos.bannerId, banners.id))
     .where(eq(combos.visible, true))
 
-  // Build combo stock map
+  // Build combo stock map (handles both fixed productId slots and group slots)
   const comboStockMap = new Map<number, number>()
   if (visibleCombos.length > 0) {
     const comboIds = visibleCombos.map(c => c.id)
     const comboItemRows = await db
       .select({
         comboId: comboItems.comboId,
+        productId: comboItems.productId,
+        productGroupName: comboItems.productGroupName,
+        productGroupWeight: comboItems.productGroupWeight,
         quantity: comboItems.quantity,
         stock: products.stock,
       })
       .from(comboItems)
-      .innerJoin(products, eq(comboItems.productId, products.id))
+      .leftJoin(products, eq(comboItems.productId, products.id))
       .where(inArray(comboItems.comboId, comboIds))
 
-    // Group by comboId, compute min(floor(stock/quantity))
+    // For group slots, fetch total stock by name+weight
+    const groupSlots = comboItemRows.filter(r => r.productGroupName)
+    const groupStockMap = new Map<string, number>()
+    if (groupSlots.length > 0) {
+      const conditions = groupSlots.map(r =>
+        r.productGroupWeight
+          ? and(eq(products.name, r.productGroupName!), eq(products.weightG, r.productGroupWeight))
+          : eq(products.name, r.productGroupName!)
+      )
+      const stockRows = await db
+        .select({ name: products.name, weightG: products.weightG, total: sql<number>`sum(${products.stock})` })
+        .from(products)
+        .where(or(...conditions))
+        .groupBy(products.name, products.weightG)
+      for (const r of stockRows) groupStockMap.set(`${r.name}||${r.weightG ?? ''}`, Number(r.total))
+    }
+
     const itemsByCombo = new Map<number, { stock: number; quantity: number }[]>()
     for (const row of comboItemRows) {
+      const stock = row.productGroupName
+        ? (groupStockMap.get(`${row.productGroupName}||${row.productGroupWeight ?? ''}`) ?? 0)
+        : (row.stock ?? 0)
       const list = itemsByCombo.get(row.comboId) ?? []
-      list.push({ stock: row.stock, quantity: row.quantity })
+      list.push({ stock, quantity: row.quantity })
       itemsByCombo.set(row.comboId, list)
     }
     for (const [cId, cItems] of itemsByCombo) {
