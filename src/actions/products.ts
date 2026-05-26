@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/db'
-import { products, categories, brands, flavors, banners } from '@/db/schema'
+import { products, categories, brands, flavors, banners, pricing } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
@@ -30,12 +30,15 @@ export async function getProducts() {
       bannerName: banners.name,
       bannerColor: banners.color,
       bannerId: products.bannerId,
+      priceCashRounded: pricing.priceCashRounded,
+      totalCost: pricing.totalCost,
     })
     .from(products)
     .leftJoin(categories, eq(products.categoryId, categories.id))
     .leftJoin(brands, eq(products.brandId, brands.id))
     .leftJoin(flavors, eq(products.flavorId, flavors.id))
     .leftJoin(banners, eq(products.bannerId, banners.id))
+    .leftJoin(pricing, eq(products.id, pricing.productId))
     .orderBy(products.name)
 }
 

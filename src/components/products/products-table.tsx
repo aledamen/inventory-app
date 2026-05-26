@@ -22,7 +22,7 @@ type Props = {
   lookups: { categories: {id:number,name:string}[], brands: {id:number,name:string}[], flavors: {id:number,name:string}[], banners: {id:number,name:string,color:string}[] }
 }
 
-type SortField = 'sku' | 'name' | 'brand' | 'cost' | 'stock'
+type SortField = 'sku' | 'name' | 'brand' | 'cost' | 'stock' | 'price'
 
 function stockBadge(stock: number, min: number | null) {
   if (stock === 0) return <Badge variant="destructive">Sin stock</Badge>
@@ -57,8 +57,9 @@ export function ProductsTable({ products, lookups }: Props) {
         case 'sku':   av = a.sku;              bv = b.sku;              break
         case 'name':  av = a.name;             bv = b.name;             break
         case 'brand': av = a.brand ?? '';      bv = b.brand ?? '';      break
-        case 'cost':  av = Number(a.cost);     bv = Number(b.cost);     break
-        case 'stock': av = a.stock;            bv = b.stock;            break
+        case 'cost':  av = Number(a.cost);              bv = Number(b.cost);              break
+        case 'price': av = a.priceCashRounded ?? 0;   bv = b.priceCashRounded ?? 0;   break
+        case 'stock': av = a.stock;                   bv = b.stock;                   break
       }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
@@ -120,6 +121,7 @@ export function ProductsTable({ products, lookups }: Props) {
               <TableHead>Sabor</TableHead>
               <SortHead field="brand">Marca</SortHead>
               <SortHead field="cost" className="text-right">Costo</SortHead>
+              <SortHead field="price" className="text-right">Precio venta</SortHead>
               <SortHead field="stock" className="text-center">Stock</SortHead>
               <TableHead className="text-center">Catálogo</TableHead>
               <TableHead className="w-20"></TableHead>
@@ -128,7 +130,7 @@ export function ProductsTable({ products, lookups }: Props) {
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                   No hay productos
                 </TableCell>
               </TableRow>
@@ -148,8 +150,11 @@ export function ProductsTable({ products, lookups }: Props) {
                 <TableCell className="font-medium">{p.name}</TableCell>
                 <TableCell className="text-muted-foreground">{p.flavor ?? '—'}</TableCell>
                 <TableCell>{p.brand ?? '—'}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right tabular-nums">
                   ${Number(p.cost).toLocaleString('es-AR')}
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">
+                  {p.priceCashRounded ? `$${p.priceCashRounded.toLocaleString('es-AR')}` : '—'}
                 </TableCell>
                 <TableCell className="text-center">
                   {stockBadge(p.stock, p.stockMin)}
@@ -182,11 +187,15 @@ export function ProductsTable({ products, lookups }: Props) {
             ))}
             {filtered.length > 0 && (() => {
               const totalStock = filtered.reduce((a, p) => a + p.stock, 0)
+              const totalAtCost = filtered.reduce((a, p) => a + p.stock * Number(p.cost), 0)
+              const totalAtPrice = filtered.reduce((a, p) => a + p.stock * (p.priceCashRounded ?? 0), 0)
+              const fmt = (n: number) => `$${Math.round(n).toLocaleString('es-AR')}`
               return (
                 <TableRow className="border-t-2 font-semibold bg-muted/40">
                   <TableCell />
                   <TableCell colSpan={4} className="text-muted-foreground text-xs">{filtered.length} productos</TableCell>
-                  <TableCell />
+                  <TableCell className="text-right tabular-nums">{fmt(totalAtCost)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{totalAtPrice > 0 ? fmt(totalAtPrice) : '—'}</TableCell>
                   <TableCell className="text-center tabular-nums">
                     <Badge variant="secondary">{totalStock}</Badge>
                   </TableCell>

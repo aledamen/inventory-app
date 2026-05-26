@@ -77,7 +77,7 @@ export default async function DashboardPage() {
           <KpiCard
             title="Ganancia neta"
             value={$(stats.monthlyNetProfit)}
-            variant="success"
+            variant={stats.monthlyNetProfit >= 0 ? 'success' : 'danger'}
             icon={<TrendingUp className="w-4 h-4" />}
             href="/dashboard/analytics"
           />

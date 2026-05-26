@@ -21,6 +21,8 @@ export type ProductWithRelations = {
   bannerName: string | null
   bannerColor: string | null
   bannerId: number | null
+  priceCashRounded: number | null
+  totalCost: string | null
 }
 
 export type StockMovementWithProduct = {
