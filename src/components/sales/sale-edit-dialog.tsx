@@ -71,7 +71,7 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
       <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}>
         <Pencil className="h-3.5 w-3.5" />
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Editar venta #{sale.saleNumber}</DialogTitle>
         </DialogHeader>
@@ -91,7 +91,7 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
           <div className="space-y-1.5">
             <Label>Producto *</Label>
             <Select value={productId} onValueChange={v => setProductId(v ?? productId)} required>
-              <SelectTrigger><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
               <SelectContent>
                 {products.map(p => (
                   <SelectItem key={p.id} value={String(p.id)}>
@@ -158,7 +158,7 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
             <div className="space-y-1.5">
               <Label>Método de pago</Label>
               <Select value={paymentMethodId} onValueChange={v => setPaymentMethodId(v ?? '')}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.paymentMethods.map(p => (
                     <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>

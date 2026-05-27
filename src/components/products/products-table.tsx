@@ -187,7 +187,7 @@ export function ProductsTable({ products, lookups }: Props) {
             ))}
             {filtered.length > 0 && (() => {
               const totalStock = filtered.reduce((a, p) => a + p.stock, 0)
-              const totalAtCost = filtered.reduce((a, p) => a + p.stock * Number(p.cost), 0)
+              const totalAtCost = filtered.reduce((a, p) => a + p.stock * Number(p.totalCost ?? p.cost), 0)
               const totalAtPrice = filtered.reduce((a, p) => a + p.stock * (p.priceCashRounded ?? 0), 0)
               const fmt = (n: number) => `$${Math.round(n).toLocaleString('es-AR')}`
               return (

@@ -52,6 +52,7 @@ export type SaleWithProduct = {
   productFlavor: string | null
   quantity: number
   effectivePrice: string | null
+  saleValue: string | null
   totalSale: string | null
   netProfit: string | null
   paymentMethodId: number | null

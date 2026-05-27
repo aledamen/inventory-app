@@ -124,7 +124,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
       <DialogTrigger render={<Button />}>
         <Plus className="h-4 w-4 mr-2" />Nueva venta
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Registrar venta</DialogTitle>
         </DialogHeader>
@@ -159,7 +159,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
                   required
                   onValueChange={v => setSelectedProduct(availableProducts.find(p => p.id === Number(v)) ?? null)}
                 >
-                  <SelectTrigger><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
                   <SelectContent>
                     {availableProducts.map(p => (
                       <SelectItem key={p.id} value={String(p.id)}>
@@ -189,7 +189,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
               <div className="space-y-1.5">
                 <Label>Combo *</Label>
                 <Select required onValueChange={handleComboChange}>
-                  <SelectTrigger><SelectValue placeholder="Seleccionar combo" /></SelectTrigger>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar combo" /></SelectTrigger>
                   <SelectContent>
                     {availableCombos.map(c => (
                       <SelectItem key={c.id} value={String(c.id)}>
@@ -219,7 +219,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
                         return [...rest, { itemId: slot.id, productId: Number(v) }]
                       })}
                     >
-                      <SelectTrigger><SelectValue placeholder="Seleccionar sabor" /></SelectTrigger>
+                      <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar sabor" /></SelectTrigger>
                       <SelectContent>
                         {opts.map(p => (
                           <SelectItem key={p.id} value={String(p.id)}>
@@ -289,7 +289,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
             <div className="space-y-1.5">
               <Label>Método de pago</Label>
               <Select name="paymentMethodId">
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.paymentMethods.map(p => (
                     <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>

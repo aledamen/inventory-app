@@ -13,9 +13,9 @@ type Props = {
 const variantStyles = {
   default: { card: 'border-border', value: 'text-foreground', dot: 'bg-border' },
   blue: { card: 'border-primary/20 bg-primary/5', value: 'text-primary', dot: 'bg-primary' },
-  success: { card: 'border-emerald-200 bg-emerald-50/60', value: 'text-emerald-700', dot: 'bg-emerald-500' },
-  warning: { card: 'border-amber-200 bg-amber-50/60', value: 'text-amber-700', dot: 'bg-amber-500' },
-  danger: { card: 'border-red-200 bg-red-50/60', value: 'text-red-600', dot: 'bg-red-500' },
+  success: { card: 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-800 dark:bg-emerald-950/30', value: 'text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500' },
+  warning: { card: 'border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-950/20', value: 'text-amber-700 dark:text-amber-400', dot: 'bg-amber-500' },
+  danger: { card: 'border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/20', value: 'text-red-600 dark:text-red-400', dot: 'bg-red-500' },
 }
 
 export function KpiCard({ title, value, sub, variant = 'default', icon, href }: Props) {

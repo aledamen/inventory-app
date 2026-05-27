@@ -17,6 +17,7 @@ export async function getSales() {
       productFlavor: flavors.name,
       quantity: sales.quantity,
       effectivePrice: sales.effectivePrice,
+      saleValue: sales.saleValue,
       totalSale: sales.totalSale,
       netProfit: sales.netProfit,
       paymentMethodId: sales.paymentMethodId,

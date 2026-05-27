@@ -173,7 +173,7 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
             ))}
             {filtered.length > 0 && (() => {
               const totalQty = filtered.reduce((a, s) => a + s.quantity, 0)
-              const totalRev = filtered.reduce((a, s) => a + Number(s.totalSale ?? 0), 0)
+              const totalRev = filtered.reduce((a, s) => a + Number(s.saleValue ?? 0), 0)
               const totalProfit = filtered.reduce((a, s) => a + Number(s.netProfit ?? 0), 0)
               const uniqueSales = new Set(filtered.map(s => s.saleNumber)).size
               return (
