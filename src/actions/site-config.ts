@@ -58,4 +58,13 @@ export async function setSiteConfigBulk(data: Record<string, string>) {
   }
   revalidatePath('/dashboard/cms')
   revalidatePath('/api/site-config')
+
+  const catalogUrl = process.env.CATALOG_APP_URL
+  const secret = process.env.REVALIDATE_SECRET
+  if (catalogUrl && secret) {
+    fetch(`${catalogUrl}/api/revalidate`, {
+      method: 'POST',
+      headers: { 'x-revalidate-secret': secret },
+    }).catch(() => null)
+  }
 }

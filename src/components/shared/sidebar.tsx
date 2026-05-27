@@ -25,6 +25,7 @@ import {
   PackagePlus,
   Eye,
 } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 const navItems = [
   { group: 'Principal', items: [
@@ -104,7 +105,8 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
         className="px-4 py-4 flex items-center gap-3"
       >
         <UserButton />
-        <span style={{ color: 'var(--sidebar-foreground)' }} className="text-xs truncate">Mi cuenta</span>
+        <span style={{ color: 'var(--sidebar-foreground)' }} className="text-xs truncate flex-1">Mi cuenta</span>
+        <ThemeToggle />
       </div>
     </>
   )
