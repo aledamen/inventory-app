@@ -37,9 +37,9 @@ async function recalculatePricing(productId: number) {
   const mList = Number(pricingRow.marginList ?? cfg.defaultMarginList)
   const shipping = pricingRow.clientShipping ?? 3500
 
-  const priceCash = mCash > 0 ? totalCost / (1 - mCash) : totalCost
-  const priceTransfer = mTransfer > 0 ? totalCost / (1 - mTransfer) : totalCost
-  const priceList = mList > 0 ? totalCost / (1 - mList) : totalCost
+  const priceCash = totalCost * (1 + mCash)
+  const priceTransfer = totalCost * (1 + mTransfer)
+  const priceList = totalCost * (1 + mList)
 
   await db.update(pricing).set({
     shippingCost: String(shippingCost),

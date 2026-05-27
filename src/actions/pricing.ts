@@ -91,9 +91,9 @@ export async function updatePricing(id: number, data: {
   const mList = data.marginList ?? Number(current.marginList ?? cfg.defaultMarginList)
   const shipping = data.clientShipping ?? (current.clientShipping ?? 3500)
 
-  const priceCash = mCash > 0 ? totalCost / (1 - mCash) : totalCost
-  const priceTransfer = mTransfer > 0 ? totalCost / (1 - mTransfer) : totalCost
-  const priceList = mList > 0 ? totalCost / (1 - mList) : totalCost
+  const priceCash = totalCost * (1 + mCash)
+  const priceTransfer = totalCost * (1 + mTransfer)
+  const priceList = totalCost * (1 + mList)
 
   await db.update(pricing).set({
     shippingCost: String(shippingCost),
@@ -155,9 +155,9 @@ export async function recalculateAllPricing() {
     const mList = Number(row.marginList ?? cfg.defaultMarginList)
     const shipping = row.clientShipping ?? 3500
 
-    const priceCash = mCash > 0 ? totalCost / (1 - mCash) : totalCost
-    const priceTransfer = mTransfer > 0 ? totalCost / (1 - mTransfer) : totalCost
-    const priceList = mList > 0 ? totalCost / (1 - mList) : totalCost
+    const priceCash = totalCost * (1 + mCash)
+    const priceTransfer = totalCost * (1 + mTransfer)
+    const priceList = totalCost * (1 + mList)
 
     await db.update(pricing).set({
       shippingCost: String(shippingCost),
