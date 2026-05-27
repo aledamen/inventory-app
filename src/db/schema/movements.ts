@@ -42,3 +42,12 @@ export const expenses = pgTable('expenses', {
   total: numeric('total', { precision: 12, scale: 2 }).notNull(),
   date: timestamp('date').defaultNow(),
 })
+
+export const capitalMovements = pgTable('capital_movements', {
+  id: serial('id').primaryKey(),
+  type: text('type').notNull().default('aporte'), // 'aporte' | 'retiro'
+  amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+  notes: text('notes'),
+  date: timestamp('date').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+})

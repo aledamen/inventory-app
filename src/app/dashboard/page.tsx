@@ -1,4 +1,5 @@
 import { getDashboardStats } from '@/actions/dashboard'
+import { getCajaBalance } from '@/actions/capital'
 import { KpiCard } from '@/components/dashboard/kpi-card'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -9,7 +10,7 @@ import { DollarSign, TrendingUp, Package, ShoppingCart, AlertTriangle, Wallet } 
 const $ = (n: number) => `$${n.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
 
 export default async function DashboardPage() {
-  const stats = await getDashboardStats()
+  const [stats, caja] = await Promise.all([getDashboardStats(), getCajaBalance()])
 
   return (
     <div className="space-y-8">
@@ -52,6 +53,44 @@ export default async function DashboardPage() {
             variant={stats.outOfStockCount > 0 ? 'danger' : stats.lowStockCount > 0 ? 'warning' : 'default'}
             icon={<AlertTriangle className="w-4 h-4" />}
             href="/dashboard/products"
+          />
+        </div>
+      </div>
+
+      {/* Caja */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Caja</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            title="Saldo en caja"
+            value={$(caja.balance)}
+            sub="balance actual"
+            variant={caja.balance >= 0 ? 'success' : 'danger'}
+            icon={<Wallet className="w-4 h-4" />}
+            href="/dashboard/caja"
+          />
+          <KpiCard
+            title="Aportes propios"
+            value={$(caja.aportes)}
+            sub="capital ingresado"
+            variant="blue"
+            icon={<DollarSign className="w-4 h-4" />}
+            href="/dashboard/caja"
+          />
+          <KpiCard
+            title="Total ventas"
+            value={$(caja.ventas)}
+            sub="ingresos acumulados"
+            variant="success"
+            icon={<ShoppingCart className="w-4 h-4" />}
+            href="/dashboard/sales"
+          />
+          <KpiCard
+            title="Stock comprado"
+            value={$(caja.stockComprado)}
+            sub="inversión en mercadería"
+            icon={<Package className="w-4 h-4" />}
+            href="/dashboard/stock"
           />
         </div>
       </div>

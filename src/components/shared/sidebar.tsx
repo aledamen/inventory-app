@@ -24,6 +24,7 @@ import {
   Store,
   PackagePlus,
   Eye,
+  Wallet,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -53,6 +54,7 @@ const navItems = [
     { href: '/dashboard/visitors', label: 'Visitantes', icon: Eye },
   ]},
   { group: 'Finanzas', items: [
+    { href: '/dashboard/caja', label: 'Caja', icon: Wallet },
     { href: '/dashboard/expenses', label: 'Gastos', icon: Receipt },
   ]},
   { group: 'Sistema', items: [
