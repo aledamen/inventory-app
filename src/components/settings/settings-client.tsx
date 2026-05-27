@@ -29,11 +29,55 @@ type Lookups = {
 const CONFIG_LABELS: Record<string, { label: string; description: string }> = {
   costo_abastancemiento_por_gramo: {
     label: 'Costo abastecimiento por gramo',
-    description: 'Costo de envío del proveedor por gramo de producto (ARS)',
+    description: 'Costo de envío del proveedor por gramo de producto. Se multiplica por el peso del producto para calcular el costo de abastecimiento.',
   },
   costo_envio: {
     label: 'Costo de envío al cliente',
-    description: 'Costo fijo de envío que se suma al precio de venta (ARS)',
+    description: 'Costo fijo de envío que se agrega al precio final (ARS). Por ahora no se usa en el cálculo automático.',
+  },
+  comision_mp: {
+    label: 'Comisión MercadoPago',
+    description: 'Porcentaje que cobra MercadoPago por transacción (ej: 0.2 = 20%). Por ahora referencial.',
+  },
+  margen_estandar_amigo: {
+    label: 'Margen estándar amigo',
+    description: 'Margen de ganancia para ventas a conocidos. Por ahora referencial.',
+  },
+  margen_estandar_efectivo: {
+    label: 'Margen estándar efectivo',
+    description: 'Margen global para precios en efectivo (ej: 0.25 = 25%). Al guardar se recalculan todos los precios.',
+  },
+  margen_estandar_transferencia: {
+    label: 'Margen estándar transferencia',
+    description: 'Margen global para precios de transferencia. Al guardar se recalculan todos los precios.',
+  },
+  margen_estandar_lista: {
+    label: 'Margen estándar lista',
+    description: 'Margen global para precios de lista/catálogo. Al guardar se recalculan todos los precios.',
+  },
+  margen_premium_efectivo: {
+    label: 'Margen premium efectivo',
+    description: 'Margen para productos de tipo premium (efectivo). Por ahora referencial.',
+  },
+  margen_premium_lista: {
+    label: 'Margen premium lista',
+    description: 'Margen para productos de tipo premium (lista). Por ahora referencial.',
+  },
+  precio_bolsa_chica_unidad: {
+    label: 'Bolsa chica 25x35 (precio unitario)',
+    description: 'Costo de la bolsa chica usada en packaging. Al guardar se recalculan todos los precios.',
+  },
+  prcio_bolsa_mediana_unidad: {
+    label: 'Bolsa mediana 30x40 (precio unitario)',
+    description: 'Costo de la bolsa mediana usada en packaging. Al guardar se recalculan todos los precios.',
+  },
+  precio_bolsa_grande_unidad: {
+    label: 'Bolsa grande 40x50 (precio unitario)',
+    description: 'Costo de la bolsa grande usada en packaging. Al guardar se recalculan todos los precios.',
+  },
+  precio_sticker_unidad: {
+    label: 'Sticker por unidad',
+    description: 'Costo del sticker de marca. Se suma al costo de bolsa para calcular el packaging total. Al guardar se recalculan todos los precios.',
   },
 }
 

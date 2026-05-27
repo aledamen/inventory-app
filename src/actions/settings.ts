@@ -4,6 +4,8 @@ import { db } from '@/db'
 import { config, categories, brands, flavors, paymentMethods, products, stockMovements, sales } from '@/db/schema'
 import { eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { recalculateAllPricing } from '@/actions/pricing'
+import { PRICING_CONFIG_KEYS } from '@/lib/pricing-calc'
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
@@ -16,6 +18,10 @@ export async function upsertConfig(key: string, value: string) {
     .onConflictDoUpdate({ target: config.key, set: { value } })
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard/pricing')
+
+  if (PRICING_CONFIG_KEYS.has(key)) {
+    await recalculateAllPricing()
+  }
 }
 
 // ── Lookups ────────────────────────────────────────────────────────────────

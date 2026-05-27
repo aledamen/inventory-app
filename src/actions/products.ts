@@ -1,9 +1,62 @@
 'use server'
 
 import { db } from '@/db'
-import { products, categories, brands, flavors, banners, pricing } from '@/db/schema'
+import { products, categories, brands, flavors, banners, pricing, config } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { configFromMap, getBagPrice, roundUp } from '@/lib/pricing-calc'
+
+async function recalculatePricing(productId: number) {
+  const [pricingRow] = await db.select().from(pricing).where(eq(pricing.productId, productId)).limit(1)
+  if (!pricingRow) return
+
+  const [product] = await db
+    .select({ cost: products.cost, weightG: products.weightG, bagAssigned: products.bagAssigned })
+    .from(products)
+    .where(eq(products.id, productId))
+    .limit(1)
+  if (!product) return
+
+  const configRows = await db.select().from(config)
+  const cfg = configFromMap(Object.fromEntries(configRows.map(r => [r.key, r.value])))
+
+  const shippingCost = product.weightG
+    ? cfg.costPerGram * product.weightG
+    : Number(pricingRow.shippingCost ?? 0)
+
+  const bagCost = getBagPrice(product.bagAssigned, cfg)
+  const packagingCost = bagCost > 0
+    ? bagCost + cfg.stickerCost
+    : Number(pricingRow.packagingCost ?? 0)
+
+  const cost = Number(product.cost ?? 0)
+  const totalCost = cost + shippingCost + packagingCost
+
+  const mCash = Number(pricingRow.marginCash ?? cfg.defaultMarginCash)
+  const mTransfer = Number(pricingRow.marginTransfer ?? cfg.defaultMarginTransfer)
+  const mList = Number(pricingRow.marginList ?? cfg.defaultMarginList)
+  const shipping = pricingRow.clientShipping ?? 3500
+
+  const priceCash = mCash > 0 ? totalCost / (1 - mCash) : totalCost
+  const priceTransfer = mTransfer > 0 ? totalCost / (1 - mTransfer) : totalCost
+  const priceList = mList > 0 ? totalCost / (1 - mList) : totalCost
+
+  await db.update(pricing).set({
+    shippingCost: String(shippingCost),
+    packagingCost: String(packagingCost),
+    totalCost: String(totalCost),
+    priceCash: String(priceCash),
+    priceCashRounded: roundUp(priceCash),
+    priceTransfer: String(priceTransfer),
+    priceTransferRounded: roundUp(priceTransfer),
+    priceList: String(priceList),
+    priceListRounded: roundUp(priceList),
+    priceCashWithShipping: roundUp(priceCash) + Math.round(Number(shipping)),
+    priceListWithShipping: roundUp(priceList) + Math.round(Number(shipping)),
+    profit: String(priceCash - totalCost),
+    updatedAt: new Date(),
+  }).where(eq(pricing.productId, productId))
+}
 
 export async function getProducts() {
   return db
@@ -101,6 +154,12 @@ export async function updateProduct(id: number, data: Partial<{
     ...(cost !== undefined ? { cost: String(cost) } : {}),
     updatedAt: new Date(),
   }).where(eq(products.id, id))
+
+  if (cost !== undefined || rest.weightG !== undefined || rest.bagAssigned !== undefined) {
+    await recalculatePricing(id)
+    revalidatePath('/dashboard/pricing')
+  }
+
   revalidatePath('/dashboard/products')
 }
 
