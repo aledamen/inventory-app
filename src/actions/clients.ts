@@ -59,6 +59,9 @@ export async function createClient(data: {
 }) {
   await db.insert(clients).values(data)
   revalidatePath('/dashboard/clients')
+  revalidatePath('/dashboard/sales')
+  revalidatePath('/dashboard/orders')
+  revalidatePath('/dashboard/returns')
 }
 
 export async function updateClient(id: number, data: {
@@ -70,9 +73,15 @@ export async function updateClient(id: number, data: {
 }) {
   await db.update(clients).set(data).where(eq(clients.id, id))
   revalidatePath('/dashboard/clients')
+  revalidatePath('/dashboard/sales')
+  revalidatePath('/dashboard/orders')
+  revalidatePath('/dashboard/returns')
 }
 
 export async function deleteClient(id: number) {
   await db.delete(clients).where(eq(clients.id, id))
   revalidatePath('/dashboard/clients')
+  revalidatePath('/dashboard/sales')
+  revalidatePath('/dashboard/orders')
+  revalidatePath('/dashboard/returns')
 }

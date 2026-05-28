@@ -40,6 +40,9 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
   const [imageUrl, setImageUrl] = useState<string | null>(product?.imageUrl ?? null)
   const [dragOver, setDragOver] = useState(false)
   const [bannerId, setBannerId] = useState<string>(product?.bannerId ? String(product.bannerId) : '')
+  const [categoryId, setCategoryId] = useState<string>(String(lookups.categories.find(c => c.name === product?.category)?.id ?? ''))
+  const [brandId, setBrandId] = useState<string>(String(lookups.brands.find(b => b.name === product?.brand)?.id ?? ''))
+  const [flavorId, setFlavorId] = useState<string>(String(lookups.flavors.find(f => f.name === product?.flavor)?.id ?? ''))
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -50,9 +53,9 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
       sku: fd.get('sku') as string,
       name: fd.get('name') as string,
       cost: Number(fd.get('cost')),
-      categoryId: fd.get('categoryId') ? Number(fd.get('categoryId')) : undefined,
-      brandId: fd.get('brandId') ? Number(fd.get('brandId')) : undefined,
-      flavorId: fd.get('flavorId') ? Number(fd.get('flavorId')) : undefined,
+      categoryId: categoryId ? Number(categoryId) : undefined,
+      brandId: brandId ? Number(brandId) : undefined,
+      flavorId: flavorId ? Number(flavorId) : undefined,
       weightG: fd.get('weightG') ? Number(fd.get('weightG')) : undefined,
       stockMin: fd.get('stockMin') ? Number(fd.get('stockMin')) : undefined,
       type: fd.get('type') as string || 'estandar',
@@ -130,13 +133,14 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
         ? <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}><Pencil className="h-3.5 w-3.5" /></DialogTrigger>
         : <DialogTrigger render={<Button />}><Plus className="h-4 w-4 mr-2" />Nuevo producto</DialogTrigger>
       }
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{mode === 'edit' ? 'Editar producto' : 'Nuevo producto'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit}>
+          <div className={mode === 'edit' ? 'grid sm:grid-cols-[220px_1fr] gap-6' : 'space-y-4'}>
 
-          {/* Image upload — only in edit mode */}
+          {/* Left column: image + banner (edit only) */}
           {mode === 'edit' && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -212,6 +216,8 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
             </div>
           )}
 
+          {/* Right column (or full width in create mode) */}
+          <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="sku">SKU *</Label>
@@ -231,7 +237,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Categoría</Label>
-              <Select name="categoryId" defaultValue={String(lookups.categories.find(c => c.name === product?.category)?.id ?? '')}>
+              <Select value={categoryId} onValueChange={v => setCategoryId(v ?? '')}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
@@ -240,7 +246,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
             </div>
             <div className="space-y-1.5">
               <Label>Marca</Label>
-              <Select name="brandId" defaultValue={String(lookups.brands.find(b => b.name === product?.brand)?.id ?? '')}>
+              <Select value={brandId} onValueChange={v => setBrandId(v ?? '')}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.brands.map(b => <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>)}
@@ -252,7 +258,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Sabor</Label>
-              <Select name="flavorId" defaultValue={String(lookups.flavors.find(f => f.name === product?.flavor)?.id ?? '')}>
+              <Select value={flavorId} onValueChange={v => setFlavorId(v ?? '')}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.flavors.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>)}
@@ -330,6 +336,8 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
               {loading ? 'Guardando...' : mode === 'edit' ? 'Guardar' : 'Crear'}
             </Button>
           </div>
+          </div>{/* end right column */}
+          </div>{/* end grid wrapper */}
         </form>
       </DialogContent>
     </Dialog>

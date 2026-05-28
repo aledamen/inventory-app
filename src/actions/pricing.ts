@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { pricing, products, categories, brands, flavors, config } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { revalidateCatalog } from '@/lib/catalog'
 import { configFromMap, getBagPrice, roundUp, type PricingConfig } from '@/lib/pricing-calc'
 
 async function fetchConfig(): Promise<PricingConfig> {
@@ -116,6 +117,7 @@ export async function updatePricing(id: number, data: {
   }).where(eq(pricing.id, id))
 
   revalidatePath('/dashboard/pricing')
+  await revalidateCatalog()
 }
 
 export async function recalculateAllPricing() {
@@ -178,4 +180,5 @@ export async function recalculateAllPricing() {
 
   revalidatePath('/dashboard/pricing')
   revalidatePath('/dashboard/products')
+  await revalidateCatalog()
 }

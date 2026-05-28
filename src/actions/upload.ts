@@ -5,6 +5,7 @@ import { db } from '@/db'
 import { products } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { revalidateCatalog } from '@/lib/catalog'
 
 export async function uploadProductImage(productId: number, formData: FormData) {
   const file = formData.get('file') as File
@@ -32,6 +33,8 @@ export async function uploadProductImage(productId: number, formData: FormData) 
     .where(eq(products.id, productId))
 
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/cms')
+  await revalidateCatalog()
   return blob.url
 }
 
@@ -51,6 +54,8 @@ export async function deleteProductImage(productId: number) {
     .where(eq(products.id, productId))
 
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/cms')
+  await revalidateCatalog()
 }
 
 export async function toggleProductVisible(productId: number, visible: boolean) {
@@ -61,4 +66,5 @@ export async function toggleProductVisible(productId: number, visible: boolean) 
 
   revalidatePath('/dashboard/products')
   revalidatePath('/api/catalog')
+  await revalidateCatalog()
 }

@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { products, categories, brands, flavors, banners, pricing, config } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { revalidateCatalog } from '@/lib/catalog'
 import { configFromMap, getBagPrice, roundUp } from '@/lib/pricing-calc'
 
 async function recalculatePricing(productId: number) {
@@ -126,6 +127,7 @@ export async function createProduct(data: {
     stock: 0,
   })
   revalidatePath('/dashboard/products')
+  await revalidateCatalog()
 }
 
 export async function updateProduct(id: number, data: Partial<{
@@ -161,9 +163,11 @@ export async function updateProduct(id: number, data: Partial<{
   }
 
   revalidatePath('/dashboard/products')
+  await revalidateCatalog()
 }
 
 export async function deleteProduct(id: number) {
   await db.delete(products).where(eq(products.id, id))
   revalidatePath('/dashboard/products')
+  await revalidateCatalog()
 }
