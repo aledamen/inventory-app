@@ -95,7 +95,7 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
 
           <div className="space-y-1.5">
             <Label>Producto *</Label>
-            <Select value={productId} onValueChange={v => setProductId(v ?? productId)} required>
+            <Select value={productId} onValueChange={v => setProductId(v ?? productId)} required items={products.map(p => ({ value: String(p.id), label: `${p.name}${p.flavor ? ` · ${p.flavor}` : ''}` }))}>
               <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
               <SelectContent>
                 {products.map(p => (
@@ -162,7 +162,7 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Método de pago</Label>
-              <Select value={paymentMethodId} onValueChange={v => setPaymentMethodId(v ?? '')}>
+              <Select value={paymentMethodId} onValueChange={v => setPaymentMethodId(v ?? '')} items={lookups.paymentMethods.map(p => ({ value: String(p.id), label: p.name }))}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.paymentMethods.map(p => (

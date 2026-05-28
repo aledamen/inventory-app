@@ -81,7 +81,7 @@ export function OrderFormDialog({ products, clients }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Cliente</Label>
-              <Select value={clientId} onValueChange={setClientId}>
+              <Select value={clientId} onValueChange={setClientId} items={clients.map(c => ({ value: String(c.id), label: c.name }))}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Opcional" /></SelectTrigger>
                 <SelectContent>
                   {clients.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
@@ -101,7 +101,7 @@ export function OrderFormDialog({ products, clients }: Props) {
             </div>
             {items.map((item, idx) => (
               <div key={idx} className="flex gap-2 items-center">
-                <Select value={item.productId} onValueChange={v => handleProductChange(idx, v)}>
+                <Select value={item.productId} onValueChange={v => handleProductChange(idx, v)} items={products.map(p => ({ value: String(p.id), label: `${p.name}${p.flavor ? ` · ${p.flavor}` : ''}` }))}>
                   <SelectTrigger className="flex-1"><SelectValue placeholder="Producto" /></SelectTrigger>
                   <SelectContent>
                     {products.map(p => (

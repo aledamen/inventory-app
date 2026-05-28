@@ -162,6 +162,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
                 <Select
                   name="productId"
                   required
+                  items={availableProducts.map(p => ({ value: String(p.id), label: `${p.name}${p.weightG ? ` ${p.weightG}g` : ''}${p.flavor ? ` · ${p.flavor}` : ''}` }))}
                   onValueChange={v => setSelectedProduct(availableProducts.find(p => p.id === Number(v)) ?? null)}
                 >
                   <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
@@ -193,7 +194,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
             <>
               <div className="space-y-1.5">
                 <Label>Combo *</Label>
-                <Select required onValueChange={handleComboChange}>
+                <Select required items={availableCombos.map(c => ({ value: String(c.id), label: c.name }))} onValueChange={handleComboChange}>
                   <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar combo" /></SelectTrigger>
                   <SelectContent>
                     {availableCombos.map(c => (
@@ -219,6 +220,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
                     <Select
                       required
                       value={String(current)}
+                      items={opts.map(p => ({ value: String(p.id), label: p.flavor ?? p.name }))}
                       onValueChange={v => setGroupSelections(prev => {
                         const rest = prev.filter(s => s.itemId !== slot.id)
                         return [...rest, { itemId: slot.id, productId: Number(v) }]
@@ -293,7 +295,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Método de pago</Label>
-              <Select name="paymentMethodId">
+              <Select name="paymentMethodId" items={lookups.paymentMethods.map(p => ({ value: String(p.id), label: p.name }))}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.paymentMethods.map(p => (

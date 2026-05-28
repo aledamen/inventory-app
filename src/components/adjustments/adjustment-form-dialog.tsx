@@ -56,7 +56,7 @@ export function AdjustmentFormDialog({ products }: { products: ProductWithRelati
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="space-y-1">
             <Label>Producto *</Label>
-            <Select value={form.productId} onValueChange={v => set('productId', v)} required>
+            <Select value={form.productId} onValueChange={v => set('productId', v)} required items={products.map(p => ({ value: String(p.id), label: `${p.name}${p.flavor ? ` · ${p.flavor}` : ''}` }))}>
               <SelectTrigger><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
               <SelectContent>
                 {products.map(p => (
@@ -79,7 +79,7 @@ export function AdjustmentFormDialog({ products }: { products: ProductWithRelati
           </div>
           <div className="space-y-1">
             <Label>Motivo *</Label>
-            <Select value={form.reason} onValueChange={v => set('reason', v)} required>
+            <Select value={form.reason} onValueChange={v => set('reason', v)} required items={REASONS.map(r => ({ value: r, label: r }))}>
               <SelectTrigger><SelectValue placeholder="Seleccionar motivo" /></SelectTrigger>
               <SelectContent>
                 {REASONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}

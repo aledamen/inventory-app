@@ -237,7 +237,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Categoría</Label>
-              <Select value={categoryId} onValueChange={v => setCategoryId(v ?? '')}>
+              <Select value={categoryId} onValueChange={v => setCategoryId(v ?? '')} items={lookups.categories.map(c => ({ value: String(c.id), label: c.name }))}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
@@ -246,7 +246,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
             </div>
             <div className="space-y-1.5">
               <Label>Marca</Label>
-              <Select value={brandId} onValueChange={v => setBrandId(v ?? '')}>
+              <Select value={brandId} onValueChange={v => setBrandId(v ?? '')} items={lookups.brands.map(b => ({ value: String(b.id), label: b.name }))}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.brands.map(b => <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>)}
@@ -258,7 +258,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Sabor</Label>
-              <Select value={flavorId} onValueChange={v => setFlavorId(v ?? '')}>
+              <Select value={flavorId} onValueChange={v => setFlavorId(v ?? '')} items={lookups.flavors.map(f => ({ value: String(f.id), label: f.name }))}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.flavors.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>)}
@@ -300,7 +300,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
           {mode === 'edit' && (
             <div className="space-y-1.5">
               <Label>Banner</Label>
-              <Select value={bannerId} onValueChange={v => setBannerId(v ?? '')}>
+              <Select value={bannerId} onValueChange={v => setBannerId(v ?? '')} items={[{ value: '', label: 'Sin banner' }, ...lookups.banners.map(b => ({ value: String(b.id), label: b.name }))]}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Sin banner" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Sin banner</SelectItem>

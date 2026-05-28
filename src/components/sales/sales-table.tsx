@@ -14,6 +14,9 @@ import type { ProductWithRelations, SaleWithProduct } from '@/types'
 import { Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from '@/components/ui/sheet'
 
 type SortField = 'saleNumber' | 'date' | 'productName' | 'quantity' | 'effectivePrice' | 'totalSale' | 'netProfit' | 'paymentMethod'
 
@@ -31,6 +34,7 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [selected, setSelected] = useState<SaleWithProduct | null>(null)
 
   function handleSort(field: SortField) {
     if (field === sortField) {
@@ -55,14 +59,14 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
     rows.sort((a, b) => {
       let av: string | number, bv: string | number
       switch (sortField) {
-        case 'saleNumber':   av = a.saleNumber;                    bv = b.saleNumber;                    break
-        case 'date':         av = new Date(a.date).getTime();      bv = new Date(b.date).getTime();      break
-        case 'productName':  av = a.productName ?? '';             bv = b.productName ?? '';             break
-        case 'quantity':     av = a.quantity;                      bv = b.quantity;                      break
-        case 'effectivePrice': av = Number(a.effectivePrice ?? 0); bv = Number(b.effectivePrice ?? 0);  break
-        case 'totalSale':    av = Number(a.totalSale ?? 0);        bv = Number(b.totalSale ?? 0);        break
-        case 'netProfit':    av = Number(a.netProfit ?? 0);        bv = Number(b.netProfit ?? 0);        break
-        case 'paymentMethod': av = a.paymentMethod ?? '';          bv = b.paymentMethod ?? '';           break
+        case 'saleNumber':    av = a.saleNumber;                    bv = b.saleNumber;                    break
+        case 'date':          av = new Date(a.date).getTime();      bv = new Date(b.date).getTime();      break
+        case 'productName':   av = a.productName ?? '';             bv = b.productName ?? '';             break
+        case 'quantity':      av = a.quantity;                      bv = b.quantity;                      break
+        case 'effectivePrice':av = Number(a.effectivePrice ?? 0);   bv = Number(b.effectivePrice ?? 0);   break
+        case 'totalSale':     av = Number(a.totalSale ?? 0);        bv = Number(b.totalSale ?? 0);        break
+        case 'netProfit':     av = Number(a.netProfit ?? 0);        bv = Number(b.netProfit ?? 0);        break
+        case 'paymentMethod': av = a.paymentMethod ?? '';           bv = b.paymentMethod ?? '';           break
       }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
@@ -101,98 +105,163 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
   }
 
   return (
-    <div className="space-y-4">
-      <Input
-        placeholder="Buscar por producto, SKU o método de pago..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
-      <div className="bg-card rounded-xl border border-border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <SortHead field="saleNumber" className="w-16">#</SortHead>
-              <SortHead field="date">Fecha</SortHead>
-              <TableHead>SKU</TableHead>
-              <SortHead field="productName">Producto</SortHead>
-              <SortHead field="quantity" className="text-right">Cant.</SortHead>
-              <SortHead field="effectivePrice" className="text-right">Precio</SortHead>
-              <SortHead field="totalSale" className="text-right">Total</SortHead>
-              <SortHead field="netProfit" className="text-right">Ganancia neta</SortHead>
-              <SortHead field="paymentMethod">Método pago</SortHead>
-              <TableHead className="w-20"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 && (
+    <>
+      <div className="space-y-4">
+        <Input
+          placeholder="Buscar por producto, SKU o método de pago..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+        <div className="bg-card rounded-xl border border-border overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
-                  No hay ventas
-                </TableCell>
+                <SortHead field="saleNumber" className="w-16">#</SortHead>
+                <SortHead field="date">Fecha</SortHead>
+                <TableHead>SKU</TableHead>
+                <SortHead field="productName">Producto</SortHead>
+                <SortHead field="quantity" className="text-right">Cant.</SortHead>
+                <SortHead field="effectivePrice" className="text-right">Precio</SortHead>
+                <SortHead field="totalSale" className="text-right">Total</SortHead>
+                <SortHead field="netProfit" className="text-right">Ganancia neta</SortHead>
+                <SortHead field="paymentMethod">Método pago</SortHead>
+                <TableHead className="w-20"></TableHead>
               </TableRow>
-            )}
-            {filtered.map(s => (
-              <TableRow key={s.id}>
-                <TableCell className="text-muted-foreground">{s.saleNumber}</TableCell>
-                <TableCell>{new Date(s.date).toLocaleDateString('es-AR')}</TableCell>
-                <TableCell className="font-mono text-xs">{s.productSku}</TableCell>
-                <TableCell>
-                  {s.productName}
-                  {s.productFlavor && <span className="text-muted-foreground"> · {s.productFlavor}</span>}
-                </TableCell>
-                <TableCell className="text-right">{s.quantity}</TableCell>
-                <TableCell className="text-right">
-                  {s.effectivePrice ? `$${Number(s.effectivePrice).toLocaleString('es-AR')}` : '—'}
-                </TableCell>
-                <TableCell className="text-right font-medium">
-                  {s.totalSale ? `$${Number(s.totalSale).toLocaleString('es-AR')}` : '—'}
-                </TableCell>
-                <TableCell className="text-right">
-                  {s.netProfit ? (
-                    <Badge variant={Number(s.netProfit) >= 0 ? 'secondary' : 'destructive'} className={Number(s.netProfit) >= 0 ? 'text-green-700' : ''}>
-                      ${Number(s.netProfit).toLocaleString('es-AR')}
-                    </Badge>
-                  ) : '—'}
-                </TableCell>
-                <TableCell>{s.paymentMethod ?? '—'}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <SaleEditDialog sale={s} products={products} lookups={lookups} clients={clients} />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(s.id, s.saleNumber)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length > 0 && (() => {
-              const totalQty = filtered.reduce((a, s) => a + s.quantity, 0)
-              const totalRev = filtered.reduce((a, s) => a + Number(s.saleValue ?? 0), 0)
-              const totalProfit = filtered.reduce((a, s) => a + Number(s.netProfit ?? 0), 0)
-              const uniqueSales = new Set(filtered.map(s => s.saleNumber)).size
-              return (
-                <TableRow className="border-t-2 font-semibold bg-muted/40">
-                  <TableCell colSpan={2} className="text-muted-foreground text-xs">
-                    {filtered.length} filas · {uniqueSales} ventas
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                    No hay ventas
                   </TableCell>
-                  <TableCell colSpan={2} />
-                  <TableCell className="text-right tabular-nums">{totalQty}</TableCell>
-                  <TableCell />
-                  <TableCell className="text-right tabular-nums">${totalRev.toLocaleString('es-AR')}</TableCell>
-                  <TableCell className="text-right tabular-nums text-green-700">${totalProfit.toLocaleString('es-AR')}</TableCell>
-                  <TableCell colSpan={2} />
                 </TableRow>
-              )
-            })()}
-          </TableBody>
-        </Table>
+              )}
+              {filtered.map(s => (
+                <TableRow key={s.id} className="cursor-pointer" onClick={() => setSelected(s)}>
+                  <TableCell className="text-muted-foreground">{s.saleNumber}</TableCell>
+                  <TableCell>{new Date(s.date).toLocaleDateString('es-AR')}</TableCell>
+                  <TableCell className="font-mono text-xs">{s.productSku}</TableCell>
+                  <TableCell>
+                    {s.productName}
+                    {s.productFlavor && <span className="text-muted-foreground"> · {s.productFlavor}</span>}
+                  </TableCell>
+                  <TableCell className="text-right">{s.quantity}</TableCell>
+                  <TableCell className="text-right">
+                    {s.effectivePrice ? `$${Number(s.effectivePrice).toLocaleString('es-AR')}` : '—'}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {s.totalSale ? `$${Number(s.totalSale).toLocaleString('es-AR')}` : '—'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {s.netProfit ? (
+                      <Badge variant={Number(s.netProfit) >= 0 ? 'secondary' : 'destructive'} className={Number(s.netProfit) >= 0 ? 'text-green-700' : ''}>
+                        ${Number(s.netProfit).toLocaleString('es-AR')}
+                      </Badge>
+                    ) : '—'}
+                  </TableCell>
+                  <TableCell>{s.paymentMethod ?? '—'}</TableCell>
+                  <TableCell onClick={e => e.stopPropagation()}>
+                    <div className="flex gap-1">
+                      <SaleEditDialog sale={s} products={products} lookups={lookups} clients={clients} />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(s.id, s.saleNumber)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filtered.length > 0 && (() => {
+                const totalQty = filtered.reduce((a, s) => a + s.quantity, 0)
+                const totalRev = filtered.reduce((a, s) => a + Number(s.saleValue ?? 0), 0)
+                const totalProfit = filtered.reduce((a, s) => a + Number(s.netProfit ?? 0), 0)
+                const uniqueSales = new Set(filtered.map(s => s.saleNumber)).size
+                return (
+                  <TableRow className="border-t-2 font-semibold bg-muted/40">
+                    <TableCell colSpan={2} className="text-muted-foreground text-xs">
+                      {filtered.length} filas · {uniqueSales} ventas
+                    </TableCell>
+                    <TableCell colSpan={2} />
+                    <TableCell className="text-right tabular-nums">{totalQty}</TableCell>
+                    <TableCell />
+                    <TableCell className="text-right tabular-nums">${totalRev.toLocaleString('es-AR')}</TableCell>
+                    <TableCell className="text-right tabular-nums text-green-700">${totalProfit.toLocaleString('es-AR')}</TableCell>
+                    <TableCell colSpan={2} />
+                  </TableRow>
+                )
+              })()}
+            </TableBody>
+          </Table>
+        </div>
       </div>
-    </div>
+
+      <Sheet open={selected !== null} onOpenChange={(o) => { if (!o) setSelected(null) }}>
+        <SheetContent className="sm:max-w-md flex flex-col gap-0 p-0">
+          {selected && (
+            <>
+              <SheetHeader className="p-6 pb-4 border-b">
+                <SheetTitle>Venta #{selected.saleNumber}</SheetTitle>
+                <SheetDescription>{new Date(selected.date).toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                <div>
+                  <p className="text-xs text-muted-foreground">Producto</p>
+                  <p className="text-sm font-medium mt-0.5">
+                    {selected.productName}
+                    {selected.productFlavor && <span className="text-muted-foreground"> · {selected.productFlavor}</span>}
+                  </p>
+                  {selected.productSku && <p className="text-xs text-muted-foreground font-mono mt-0.5">{selected.productSku}</p>}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Cantidad</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.quantity}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Precio unitario</p>
+                    <p className="text-sm font-medium mt-0.5">
+                      {selected.effectivePrice ? `$${Number(selected.effectivePrice).toLocaleString('es-AR')}` : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total venta</p>
+                    <p className="text-sm font-semibold mt-0.5">
+                      {selected.totalSale ? `$${Number(selected.totalSale).toLocaleString('es-AR')}` : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Ganancia neta</p>
+                    <p className={`text-sm font-medium mt-0.5 ${Number(selected.netProfit ?? 0) >= 0 ? 'text-green-700' : 'text-destructive'}`}>
+                      {selected.netProfit ? `$${Number(selected.netProfit).toLocaleString('es-AR')}` : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Método de pago</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.paymentMethod ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Cliente</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.clientName ?? '—'}</p>
+                  </div>
+                </div>
+
+                {selected.notes && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Notas</p>
+                    <p className="text-sm">{selected.notes}</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }

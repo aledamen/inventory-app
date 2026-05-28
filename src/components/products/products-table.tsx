@@ -16,6 +16,9 @@ import type { ProductWithRelations } from '@/types'
 import { Trash2, Eye, EyeOff, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from '@/components/ui/sheet'
 
 type Props = {
   products: ProductWithRelations[]
@@ -35,6 +38,7 @@ export function ProductsTable({ products, lookups }: Props) {
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [selected, setSelected] = useState<ProductWithRelations | null>(null)
 
   function handleSort(field: SortField) {
     if (field === sortField) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -57,9 +61,9 @@ export function ProductsTable({ products, lookups }: Props) {
         case 'sku':   av = a.sku;              bv = b.sku;              break
         case 'name':  av = a.name;             bv = b.name;             break
         case 'brand': av = a.brand ?? '';      bv = b.brand ?? '';      break
-        case 'cost':  av = Number(a.cost);              bv = Number(b.cost);              break
-        case 'price': av = a.priceCashRounded ?? 0;   bv = b.priceCashRounded ?? 0;   break
-        case 'stock': av = a.stock;                   bv = b.stock;                   break
+        case 'cost':  av = Number(a.cost);     bv = Number(b.cost);     break
+        case 'price': av = a.priceCashRounded ?? 0; bv = b.priceCashRounded ?? 0; break
+        case 'stock': av = a.stock;            bv = b.stock;            break
       }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
@@ -104,108 +108,205 @@ export function ProductsTable({ products, lookups }: Props) {
   }
 
   return (
-    <div className="space-y-4">
-      <Input
-        placeholder="Buscar por nombre, SKU o marca..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
-      <div className="bg-card rounded-xl border border-border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12"></TableHead>
-              <SortHead field="sku">SKU</SortHead>
-              <SortHead field="name">Nombre</SortHead>
-              <TableHead>Sabor</TableHead>
-              <SortHead field="brand">Marca</SortHead>
-              <SortHead field="cost" className="text-right">Costo</SortHead>
-              <SortHead field="price" className="text-right">Precio venta</SortHead>
-              <SortHead field="stock" className="text-center">Stock</SortHead>
-              <TableHead className="text-center">Catálogo</TableHead>
-              <TableHead className="w-20"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 && (
+    <>
+      <div className="space-y-4">
+        <Input
+          placeholder="Buscar por nombre, SKU o marca..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+        <div className="bg-card rounded-xl border border-border overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
-                  No hay productos
-                </TableCell>
+                <TableHead className="w-12"></TableHead>
+                <SortHead field="sku">SKU</SortHead>
+                <SortHead field="name">Nombre</SortHead>
+                <TableHead>Sabor</TableHead>
+                <SortHead field="brand">Marca</SortHead>
+                <SortHead field="cost" className="text-right">Costo</SortHead>
+                <SortHead field="price" className="text-right">Precio venta</SortHead>
+                <SortHead field="stock" className="text-center">Stock</SortHead>
+                <TableHead className="text-center">Catálogo</TableHead>
+                <TableHead className="w-20"></TableHead>
               </TableRow>
-            )}
-            {filtered.map(p => (
-              <TableRow key={p.id}>
-                <TableCell>
-                  <div className="w-9 h-9 rounded-md overflow-hidden bg-muted shrink-0 flex items-center justify-center">
-                    {p.imageUrl ? (
-                      <Image src={p.imageUrl} alt={p.name} width={36} height={36} className="object-cover w-full h-full" unoptimized />
-                    ) : (
-                      <span className="text-[10px] text-muted-foreground font-mono">{p.sku.slice(0, 2)}</span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="font-mono text-xs">{p.sku}</TableCell>
-                <TableCell className="font-medium">{p.name}</TableCell>
-                <TableCell className="text-muted-foreground">{p.flavor ?? '—'}</TableCell>
-                <TableCell>{p.brand ?? '—'}</TableCell>
-                <TableCell className="text-right tabular-nums">
-                  ${Number(p.cost).toLocaleString('es-AR')}
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">
-                  {p.priceCashRounded ? `$${p.priceCashRounded.toLocaleString('es-AR')}` : '—'}
-                </TableCell>
-                <TableCell className="text-center">
-                  {stockBadge(p.stock, p.stockMin)}
-                </TableCell>
-                <TableCell className="text-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`h-7 w-7 ${p.visible ? 'text-green-600' : 'text-muted-foreground'}`}
-                    onClick={() => handleToggleVisible(p.id, p.visible)}
-                    title={p.visible ? 'Visible — clic para ocultar' : 'Oculto — clic para publicar'}
-                  >
-                    {p.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <ProductFormDialog lookups={lookups} product={p} mode="edit" />
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                    No hay productos
+                  </TableCell>
+                </TableRow>
+              )}
+              {filtered.map(p => (
+                <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelected(p)}>
+                  <TableCell>
+                    <div className="w-9 h-9 rounded-md overflow-hidden bg-muted shrink-0 flex items-center justify-center">
+                      {p.imageUrl ? (
+                        <Image src={p.imageUrl} alt={p.name} width={36} height={36} className="object-cover w-full h-full" unoptimized />
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground font-mono">{p.sku.slice(0, 2)}</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{p.sku}</TableCell>
+                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{p.flavor ?? '—'}</TableCell>
+                  <TableCell>{p.brand ?? '—'}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    ${Number(p.cost).toLocaleString('es-AR')}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {p.priceCashRounded ? `$${p.priceCashRounded.toLocaleString('es-AR')}` : '—'}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {stockBadge(p.stock, p.stockMin)}
+                  </TableCell>
+                  <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(p.id, p.name)}
+                      className={`h-7 w-7 ${p.visible ? 'text-green-600' : 'text-muted-foreground'}`}
+                      onClick={() => handleToggleVisible(p.id, p.visible)}
+                      title={p.visible ? 'Visible — clic para ocultar' : 'Oculto — clic para publicar'}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      {p.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
                     </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length > 0 && (() => {
-              const totalStock = filtered.reduce((a, p) => a + p.stock, 0)
-              const totalAtCost = filtered.reduce((a, p) => a + p.stock * Number(p.totalCost ?? p.cost), 0)
-              const totalAtPrice = filtered.reduce((a, p) => a + p.stock * (p.priceCashRounded ?? 0), 0)
-              const fmt = (n: number) => `$${Math.round(n).toLocaleString('es-AR')}`
-              return (
-                <TableRow className="border-t-2 font-semibold bg-muted/40">
-                  <TableCell />
-                  <TableCell colSpan={4} className="text-muted-foreground text-xs">{filtered.length} productos</TableCell>
-                  <TableCell className="text-right tabular-nums">{fmt(totalAtCost)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{totalAtPrice > 0 ? fmt(totalAtPrice) : '—'}</TableCell>
-                  <TableCell className="text-center tabular-nums">
-                    <Badge variant="secondary">{totalStock}</Badge>
                   </TableCell>
-                  <TableCell colSpan={2} />
+                  <TableCell onClick={e => e.stopPropagation()}>
+                    <div className="flex gap-1">
+                      <ProductFormDialog lookups={lookups} product={p} mode="edit" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(p.id, p.name)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              )
-            })()}
-          </TableBody>
-        </Table>
+              ))}
+              {filtered.length > 0 && (() => {
+                const totalStock = filtered.reduce((a, p) => a + p.stock, 0)
+                const totalAtCost = filtered.reduce((a, p) => a + p.stock * Number(p.totalCost ?? p.cost), 0)
+                const totalAtPrice = filtered.reduce((a, p) => a + p.stock * (p.priceCashRounded ?? 0), 0)
+                const fmt = (n: number) => `$${Math.round(n).toLocaleString('es-AR')}`
+                return (
+                  <TableRow className="border-t-2 font-semibold bg-muted/40">
+                    <TableCell />
+                    <TableCell colSpan={4} className="text-muted-foreground text-xs">{filtered.length} productos</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmt(totalAtCost)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{totalAtPrice > 0 ? fmt(totalAtPrice) : '—'}</TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      <Badge variant="secondary">{totalStock}</Badge>
+                    </TableCell>
+                    <TableCell colSpan={2} />
+                  </TableRow>
+                )
+              })()}
+            </TableBody>
+          </Table>
+        </div>
       </div>
-    </div>
+
+      <Sheet open={selected !== null} onOpenChange={(o) => { if (!o) setSelected(null) }}>
+        <SheetContent className="sm:max-w-lg flex flex-col gap-0 p-0">
+          {selected && (
+            <>
+              <SheetHeader className="p-6 pb-4 border-b">
+                <SheetTitle>{selected.name}{selected.flavor ? ` · ${selected.flavor}` : ''}</SheetTitle>
+                <SheetDescription className="font-mono">{selected.sku}</SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                {selected.imageUrl && (
+                  <div className="relative w-full aspect-square max-w-[200px] mx-auto rounded-xl overflow-hidden bg-muted">
+                    <Image src={selected.imageUrl} alt={selected.name} fill className="object-cover" unoptimized />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Marca</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.brand ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Categoría</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.category ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Costo</p>
+                    <p className="text-sm font-medium mt-0.5">${Number(selected.cost).toLocaleString('es-AR')}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Precio venta</p>
+                    <p className="text-sm font-medium mt-0.5">
+                      {selected.priceCashRounded ? `$${selected.priceCashRounded.toLocaleString('es-AR')}` : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Stock actual</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.stock}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Stock mínimo</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.stockMin ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Presentación</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.size ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Tipo</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.type ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Catálogo</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.visible ? 'Visible' : 'Oculto'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Destacado</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.featured ? 'Sí' : 'No'}</p>
+                  </div>
+                  {selected.badge && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Badge</p>
+                      <p className="text-sm font-medium mt-0.5">{selected.badge}</p>
+                    </div>
+                  )}
+                  {selected.bannerName && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Banner</p>
+                      <p className="text-sm font-medium mt-0.5 flex items-center gap-1.5">
+                        {selected.bannerColor && (
+                          <span style={{ backgroundColor: selected.bannerColor }} className="inline-block w-3 h-3 rounded-full shrink-0" />
+                        )}
+                        {selected.bannerName}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {selected.description && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Descripción</p>
+                    <p className="text-sm">{selected.description}</p>
+                  </div>
+                )}
+                {selected.notes && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Notas internas</p>
+                    <p className="text-sm">{selected.notes}</p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }
