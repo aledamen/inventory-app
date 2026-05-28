@@ -82,7 +82,7 @@ export function OrderFormDialog({ products, clients }: Props) {
             <div className="space-y-1">
               <Label>Cliente</Label>
               <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Opcional" /></SelectTrigger>
                 <SelectContent>
                   {clients.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                 </SelectContent>

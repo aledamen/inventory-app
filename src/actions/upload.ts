@@ -21,7 +21,7 @@ export async function uploadProductImage(productId: number, formData: FormData) 
   }
 
   const ext = file.name.split('.').pop() ?? 'jpg'
-  const blob = await put(`products/${existing?.sku ?? productId}.${ext}`, file, {
+  const blob = await put(`products/${existing?.sku ?? productId}-${Date.now()}.${ext}`, file, {
     access: 'public',
     contentType: file.type,
   })

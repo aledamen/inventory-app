@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/db'
-import { capitalMovements, sales, stockMovements, expenses } from '@/db/schema'
+import { capitalMovements, sales, stockMovements, expenses, products, pricing } from '@/db/schema'
 import { eq, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
@@ -19,7 +19,7 @@ export async function getCapitalMovements(): Promise<CapitalMovement[]> {
 }
 
 export async function getCajaBalance() {
-  const [aportesRow, ventasRow, stockRow, gastosRow] = await Promise.all([
+  const [aportesRow, ventasRow, stockRow, gastosRow, stockActualRows] = await Promise.all([
     db.select({
       aportes: sql<string>`coalesce(sum(case when ${capitalMovements.type} = 'aporte' then ${capitalMovements.amount} else 0 end), 0)`,
       retiros: sql<string>`coalesce(sum(case when ${capitalMovements.type} = 'retiro' then ${capitalMovements.amount} else 0 end), 0)`,
@@ -36,6 +36,11 @@ export async function getCajaBalance() {
     db.select({
       total: sql<string>`coalesce(sum(${expenses.total}), 0)`,
     }).from(expenses),
+
+    db.select({
+      stock: products.stock,
+      totalCost: pricing.totalCost,
+    }).from(products).leftJoin(pricing, eq(products.id, pricing.productId)),
   ])
 
   const aportes = Number(aportesRow[0]?.aportes ?? 0)
@@ -43,10 +48,25 @@ export async function getCajaBalance() {
   const ventas = Number(ventasRow[0]?.total ?? 0)
   const stockComprado = Number(stockRow[0]?.total ?? 0)
   const gastosTotal = Number(gastosRow[0]?.total ?? 0)
+  const stockActualCosto = stockActualRows.reduce((acc, p) => acc + p.stock * Number(p.totalCost ?? 0), 0)
 
-  const balance = aportes + ventas - stockComprado - gastosTotal - retiros
+  const efectivo = aportes + ventas - stockComprado - gastosTotal - retiros
+  // aporte sugerido: cuánto pusiste de tu bolsillo asumiendo $0 efectivo en mano
+  const aporteSugerido = Math.max(0, -efectivo)
 
-  return { aportes, retiros, ventas, stockComprado, gastosTotal, balance }
+  return {
+    aportes,
+    retiros,
+    ventas,
+    stockComprado,
+    gastosTotal,
+    efectivo,
+    stockActualCosto,
+    capitalTotal: efectivo + stockActualCosto,
+    aporteSugerido,
+    // balance legacy
+    balance: efectivo,
+  }
 }
 
 export async function createCapitalMovement(data: {

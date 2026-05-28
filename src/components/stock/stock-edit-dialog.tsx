@@ -82,7 +82,7 @@ export function StockEditDialog({ movement, products, lookups }: Props) {
           <div className="space-y-1.5">
             <Label>Producto *</Label>
             <Select value={productId} onValueChange={v => setProductId(v ?? productId)} required>
-              <SelectTrigger><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
               <SelectContent>
                 {products.map(p => (
                   <SelectItem key={p.id} value={String(p.id)}>
@@ -121,7 +121,7 @@ export function StockEditDialog({ movement, products, lookups }: Props) {
             <div className="space-y-1.5">
               <Label>Método de pago</Label>
               <Select value={paymentMethodId} onValueChange={v => setPaymentMethodId(v ?? '')}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent>
                   {lookups.paymentMethods.map(p => (
                     <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>

@@ -37,6 +37,11 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
   const [productId, setProductId] = useState(String(sale.productId))
   const [paymentMethodId, setPaymentMethodId] = useState(sale.paymentMethodId ? String(sale.paymentMethodId) : '')
   const [selectedClientId, setSelectedClientId] = useState<number | null>(sale.clientId ?? null)
+  const selectedClientName = clients.find(c => c.id === selectedClientId)?.name ?? null
+
+  function handleClientChange(name: string | null) {
+    setSelectedClientId(name ? (clients.find(c => c.name === name)?.id ?? null) : null)
+  }
 
   const selectedProduct = products.find(p => p.id === Number(productId))
 
@@ -136,15 +141,15 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
             <div className="space-y-1.5">
               <Label>Cliente</Label>
               <Combobox
-                value={selectedClientId}
-                onValueChange={v => setSelectedClientId(v as number | null)}
+                value={selectedClientName}
+                onValueChange={v => handleClientChange(v as string | null)}
               >
                 <ComboboxInput showClear placeholder="Buscar cliente..." className="w-full" />
                 <ComboboxContent>
                   <ComboboxList>
                     <ComboboxEmpty>Sin resultados</ComboboxEmpty>
                     {clients.map(c => (
-                      <ComboboxItem key={c.id} value={c.id}>
+                      <ComboboxItem key={c.id} value={c.name}>
                         {c.name}{c.phone ? ` · ${c.phone}` : ''}
                       </ComboboxItem>
                     ))}

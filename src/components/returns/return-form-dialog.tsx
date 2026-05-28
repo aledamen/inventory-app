@@ -70,7 +70,7 @@ export function ReturnFormDialog({ products, clients }: Props) {
           <div className="space-y-1">
             <Label>Producto *</Label>
             <Select value={form.productId} onValueChange={v => set('productId', v)} required>
-              <SelectTrigger><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
               <SelectContent>
                 {products.map(p => (
                   <SelectItem key={p.id} value={String(p.id)}>
@@ -94,7 +94,7 @@ export function ReturnFormDialog({ products, clients }: Props) {
             <div className="space-y-1">
               <Label>Cliente</Label>
               <Select value={form.clientId} onValueChange={v => set('clientId', v)}>
-                <SelectTrigger><SelectValue placeholder="Opcional" /></SelectTrigger>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Opcional" /></SelectTrigger>
                 <SelectContent>
                   {clients.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                 </SelectContent>
