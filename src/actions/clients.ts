@@ -15,13 +15,13 @@ export async function getClients() {
     notes: clients.notes,
     createdAt: clients.createdAt,
     totalSales: sql<number>`count(${sales.id})`,
-    totalSpent: sql<string>`coalesce(sum(${sales.totalSale}), 0)`,
+    totalSpent: sql<string>`coalesce(sum(${sales.saleValue}), 0)`,
     lastPurchase: sql<Date | null>`max(${sales.date})`,
   })
     .from(clients)
     .leftJoin(sales, eq(clients.id, sales.clientId))
     .groupBy(clients.id)
-    .orderBy(desc(sql`sum(${sales.totalSale})`))
+    .orderBy(desc(sql`sum(${sales.saleValue})`))
 }
 
 export async function getClientById(id: number) {
@@ -38,7 +38,7 @@ export async function getClientSales(clientId: number) {
     productName: products.name,
     productFlavor: flavors.name,
     quantity: sales.quantity,
-    totalSale: sales.totalSale,
+    saleValue: sales.saleValue,
     netProfit: sales.netProfit,
     paymentMethod: paymentMethods.name,
   })

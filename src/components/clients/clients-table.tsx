@@ -254,7 +254,7 @@ export function ClientsTable({ clients }: { clients: Client[] }) {
                               </TableCell>
                               <TableCell className="text-right">{s.quantity}</TableCell>
                               <TableCell className="text-right tabular-nums">
-                                {s.totalSale ? `$${Number(s.totalSale).toLocaleString('es-AR')}` : '—'}
+                                {s.saleValue ? `$${Number(s.saleValue).toLocaleString('es-AR')}` : '—'}
                               </TableCell>
                             </TableRow>
                           ))}
