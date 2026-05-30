@@ -4,7 +4,7 @@ import { products, pricing, categories, brands, flavors, sales, promotions, comb
 import { eq, and, or, isNull, gte, inArray, asc } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 
-export const revalidate = 60
+export const revalidate = 0
 
 function cartesian<T>(arrays: T[][]): T[][] {
   return arrays.reduce<T[][]>(

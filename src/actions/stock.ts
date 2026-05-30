@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { stockMovements, products, paymentMethods, flavors } from '@/db/schema'
 import { eq, desc, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { revalidateCatalog } from '@/lib/catalog'
 
 export async function getStockMovements() {
   return db
@@ -67,6 +68,7 @@ export async function createStockMovement(data: {
 
   revalidatePath('/dashboard/stock')
   revalidatePath('/dashboard/products')
+  await revalidateCatalog()
 }
 
 export async function updateStockMovement(id: number, data: {
@@ -108,6 +110,7 @@ export async function updateStockMovement(id: number, data: {
 
   revalidatePath('/dashboard/stock')
   revalidatePath('/dashboard/products')
+  await revalidateCatalog()
 }
 
 export async function deleteStockMovement(id: number) {
@@ -124,4 +127,5 @@ export async function deleteStockMovement(id: number) {
 
   revalidatePath('/dashboard/stock')
   revalidatePath('/dashboard/products')
+  await revalidateCatalog()
 }
