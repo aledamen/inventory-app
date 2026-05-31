@@ -76,7 +76,8 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
     setItems(prev => prev.filter(i => i.key !== key))
   }
 
-  function handleProductSelect(key: string, productId: string) {
+  function handleProductSelect(key: string, productId: string | null) {
+    if (!productId) return
     const p = availableProducts.find(p => String(p.id) === productId)
     updateItem(key, {
       productId,
