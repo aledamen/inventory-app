@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -64,7 +64,7 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
         case 'productName':   av = a.productName ?? '';             bv = b.productName ?? '';             break
         case 'quantity':      av = a.quantity;                      bv = b.quantity;                      break
         case 'effectivePrice':av = Number(a.effectivePrice ?? 0);   bv = Number(b.effectivePrice ?? 0);   break
-        case 'totalSale':     av = Number(a.totalSale ?? 0);        bv = Number(b.totalSale ?? 0);        break
+        case 'totalSale':     av = Number(a.saleValue ?? 0);        bv = Number(b.saleValue ?? 0);        break
         case 'netProfit':     av = Number(a.netProfit ?? 0);        bv = Number(b.netProfit ?? 0);        break
         case 'paymentMethod': av = a.paymentMethod ?? '';           bv = b.paymentMethod ?? '';           break
       }
@@ -75,6 +75,17 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
 
     return rows
   }, [sales, search, sortField, sortDir])
+
+  // Group by saleNumber maintaining sort order
+  const grouped = useMemo(() => {
+    const map = new Map<number, SaleWithProduct[]>()
+    for (const row of filtered) {
+      const g = map.get(row.saleNumber)
+      if (g) g.push(row)
+      else map.set(row.saleNumber, [row])
+    }
+    return Array.from(map.values())
+  }, [filtered])
 
   async function handleDelete(id: number, num: number) {
     if (!confirm(`¿Eliminar venta #${num}? Se restaurará el stock.`)) return
@@ -137,45 +148,77 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
                   </TableCell>
                 </TableRow>
               )}
-              {filtered.map(s => (
-                <TableRow key={s.id} className="cursor-pointer" onClick={() => setSelected(s)}>
-                  <TableCell className="text-muted-foreground">{s.saleNumber}</TableCell>
-                  <TableCell>{new Date(s.date).toLocaleDateString('es-AR')}</TableCell>
-                  <TableCell className="font-mono text-xs">{s.productSku}</TableCell>
-                  <TableCell>
-                    {s.productName}
-                    {s.productFlavor && <span className="text-muted-foreground"> · {s.productFlavor}</span>}
-                  </TableCell>
-                  <TableCell className="text-right">{s.quantity}</TableCell>
-                  <TableCell className="text-right">
-                    {s.effectivePrice ? `$${Number(s.effectivePrice).toLocaleString('es-AR')}` : '—'}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {s.totalSale ? `$${Number(s.totalSale).toLocaleString('es-AR')}` : '—'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {s.netProfit ? (
-                      <Badge variant={Number(s.netProfit) >= 0 ? 'secondary' : 'destructive'} className={Number(s.netProfit) >= 0 ? 'text-green-700' : ''}>
-                        ${Number(s.netProfit).toLocaleString('es-AR')}
-                      </Badge>
-                    ) : '—'}
-                  </TableCell>
-                  <TableCell>{s.paymentMethod ?? '—'}</TableCell>
-                  <TableCell onClick={e => e.stopPropagation()}>
-                    <div className="flex gap-1">
-                      <SaleEditDialog sale={s} products={products} lookups={lookups} clients={clients} />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(s.id, s.saleNumber)}
+              {grouped.map(group => {
+                const isMulti = group.length > 1
+                const groupTotal = group.reduce((s, r) => s + Number(r.saleValue ?? 0), 0)
+                const groupProfit = group.reduce((s, r) => s + Number(r.netProfit ?? 0), 0)
+                const groupQty = group.reduce((s, r) => s + r.quantity, 0)
+
+                return (
+                  <Fragment key={group[0].saleNumber}>
+                    {group.map((s, i) => (
+                      <TableRow
+                        key={s.id}
+                        className={cn('cursor-pointer', isMulti && 'border-b-0')}
+                        onClick={() => setSelected(s)}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        <TableCell className="text-muted-foreground">{i === 0 ? s.saleNumber : ''}</TableCell>
+                        <TableCell>{i === 0 ? new Date(s.date).toLocaleDateString('es-AR') : ''}</TableCell>
+                        <TableCell className="font-mono text-xs">{s.productSku}</TableCell>
+                        <TableCell>
+                          {s.productName}
+                          {s.productFlavor && <span className="text-muted-foreground"> · {s.productFlavor}</span>}
+                        </TableCell>
+                        <TableCell className="text-right">{s.quantity}</TableCell>
+                        <TableCell className="text-right">
+                          {s.effectivePrice ? `$${Number(s.effectivePrice).toLocaleString('es-AR')}` : '—'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {s.saleValue ? `$${Number(s.saleValue).toLocaleString('es-AR')}` : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {s.netProfit ? (
+                            <Badge variant={Number(s.netProfit) >= 0 ? 'secondary' : 'destructive'} className={Number(s.netProfit) >= 0 ? 'text-green-700' : ''}>
+                              ${Number(s.netProfit).toLocaleString('es-AR')}
+                            </Badge>
+                          ) : '—'}
+                        </TableCell>
+                        <TableCell>{i === 0 ? (s.paymentMethod ?? '—') : ''}</TableCell>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <div className="flex gap-1">
+                            <SaleEditDialog sale={s} products={products} lookups={lookups} clients={clients} />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(s.id, s.saleNumber)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {isMulti && (
+                      <TableRow className="bg-muted/40 border-b-2">
+                        <TableCell />
+                        <TableCell colSpan={3} className="text-xs text-muted-foreground font-medium py-1.5">
+                          Total venta #{group[0].saleNumber}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums py-1.5">{groupQty}</TableCell>
+                        <TableCell />
+                        <TableCell className="text-right font-semibold tabular-nums py-1.5">
+                          ${groupTotal.toLocaleString('es-AR')}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold tabular-nums text-green-700 py-1.5">
+                          ${groupProfit.toLocaleString('es-AR')}
+                        </TableCell>
+                        <TableCell colSpan={2} />
+                      </TableRow>
+                    )}
+                  </Fragment>
+                )
+              })}
               {filtered.length > 0 && (() => {
                 const totalQty = filtered.reduce((a, s) => a + s.quantity, 0)
                 const totalRev = filtered.reduce((a, s) => a + Number(s.saleValue ?? 0), 0)
@@ -230,9 +273,9 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Total venta</p>
+                    <p className="text-xs text-muted-foreground">Subtotal</p>
                     <p className="text-sm font-semibold mt-0.5">
-                      {selected.totalSale ? `$${Number(selected.totalSale).toLocaleString('es-AR')}` : '—'}
+                      {selected.saleValue ? `$${Number(selected.saleValue).toLocaleString('es-AR')}` : '—'}
                     </p>
                   </div>
                   <div>

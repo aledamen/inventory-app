@@ -16,14 +16,21 @@ import {
   ComboboxItem, ComboboxEmpty,
 } from '@/components/ui/combobox'
 import { Textarea } from '@/components/ui/textarea'
-import { createSale } from '@/actions/sales'
+import { createMultiSale } from '@/actions/sales'
 import { createComboSale } from '@/actions/combos'
 import type { ProductWithRelations } from '@/types'
 import type { ComboFull } from '@/actions/combos'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 type Client = { id: number; name: string; phone: string | null }
+
+type SaleItem = {
+  key: string
+  productId: string
+  quantity: number
+  effectivePrice: number
+}
 
 type Props = {
   products: ProductWithRelations[]
@@ -32,31 +39,56 @@ type Props = {
   clients?: Client[]
 }
 
+function newItem(): SaleItem {
+  return { key: Math.random().toString(36).slice(2), productId: '', quantity: 1, effectivePrice: 0 }
+}
+
 export function SaleFormDialog({ products, lookups, combos = [], clients = [] }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saleType, setSaleType] = useState<'product' | 'combo'>('product')
-  const [selectedProduct, setSelectedProduct] = useState<ProductWithRelations | null>(null)
+
+  // Multi-item state
+  const [items, setItems] = useState<SaleItem[]>([newItem()])
+
+  // Combo state
   const [selectedCombo, setSelectedCombo] = useState<ComboFull | null>(null)
   const [groupSelections, setGroupSelections] = useState<{ itemId: number; productId: number }[]>([])
   const [comboPrice, setComboPrice] = useState('')
+
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
   const selectedClientName = clients.find(c => c.id === selectedClientId)?.name ?? null
 
-  function handleClientChange(name: string | null) {
-    setSelectedClientId(name ? (clients.find(c => c.name === name)?.id ?? null) : null)
-  }
-
   const availableProducts = products.filter(p => p.stock > 0)
   const availableCombos = combos.filter(c => c.availableStock > 0)
+
+  const saleTotal = useMemo(
+    () => items.reduce((s, i) => s + i.effectivePrice * i.quantity, 0),
+    [items]
+  )
+
+  function updateItem(key: string, patch: Partial<SaleItem>) {
+    setItems(prev => prev.map(i => i.key === key ? { ...i, ...patch } : i))
+  }
+
+  function removeItem(key: string) {
+    setItems(prev => prev.filter(i => i.key !== key))
+  }
+
+  function handleProductSelect(key: string, productId: string) {
+    const p = availableProducts.find(p => String(p.id) === productId)
+    updateItem(key, {
+      productId,
+      effectivePrice: p?.priceCashRounded ?? 0,
+    })
+  }
 
   function handleComboChange(comboId: string | null) {
     if (!comboId) return
     const combo = availableCombos.find(c => c.id === Number(comboId)) ?? null
     setSelectedCombo(combo)
     setComboPrice(combo ? String(Number(combo.priceEffective)) : '')
-    // Init group selections with first available product for each group slot
     const sels: { itemId: number; productId: number }[] = []
     for (const item of combo?.items ?? []) {
       if (item.productGroupName) {
@@ -73,7 +105,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
 
   function resetState() {
     setSaleType('product')
-    setSelectedProduct(null)
+    setItems([newItem()])
     setSelectedCombo(null)
     setGroupSelections([])
     setComboPrice('')
@@ -86,28 +118,38 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
     const fd = new FormData(e.currentTarget)
 
     try {
+      const date = fd.get('date') ? new Date(fd.get('date') as string) : new Date()
+      const paymentMethodId = fd.get('paymentMethodId') ? Number(fd.get('paymentMethodId')) : undefined
+      const notes = (fd.get('notes') as string) || undefined
+
       if (saleType === 'combo' && selectedCombo) {
         await createComboSale({
           comboId: selectedCombo.id,
           quantity: Number(fd.get('quantity')),
           effectivePrice: Number(comboPrice),
-          paymentMethodId: fd.get('paymentMethodId') ? Number(fd.get('paymentMethodId')) : undefined,
-          notes: (fd.get('notes') as string) || undefined,
-          date: fd.get('date') ? new Date(fd.get('date') as string) : new Date(),
+          paymentMethodId,
+          notes,
+          date,
           clientId: selectedClientId ?? undefined,
           groupSelections,
         })
       } else {
-        await createSale({
-          productId: Number(fd.get('productId')),
-          quantity: Number(fd.get('quantity')),
-          effectivePrice: Number(fd.get('effectivePrice')),
-          paymentMethodId: fd.get('paymentMethodId') ? Number(fd.get('paymentMethodId')) : undefined,
-          notes: (fd.get('notes') as string) || undefined,
-          date: fd.get('date') ? new Date(fd.get('date') as string) : new Date(),
+        const validItems = items.filter(i => i.productId && i.quantity > 0)
+        if (validItems.length === 0) throw new Error('Agregá al menos un producto')
+
+        await createMultiSale({
+          items: validItems.map(i => ({
+            productId: Number(i.productId),
+            quantity: i.quantity,
+            effectivePrice: i.effectivePrice,
+          })),
+          paymentMethodId,
+          notes,
+          date,
           clientId: selectedClientId ?? undefined,
         })
       }
+
       toast.success('Venta registrada')
       setOpen(false)
       resetState()
@@ -119,8 +161,8 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
     }
   }
 
-  const groupSlots = useMemo(() =>
-    selectedCombo?.items.filter(i => i.productGroupName) ?? [],
+  const groupSlots = useMemo(
+    () => selectedCombo?.items.filter(i => i.productGroupName) ?? [],
     [selectedCombo]
   )
 
@@ -135,7 +177,6 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          {/* Tipo de venta */}
           {combos.length > 0 && (
             <div className="flex rounded-lg border border-input overflow-hidden text-sm">
               <button
@@ -143,11 +184,11 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
                 onClick={() => { setSaleType('product'); setSelectedCombo(null) }}
                 className={`flex-1 py-2 transition-colors ${saleType === 'product' ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
               >
-                Producto individual
+                Productos
               </button>
               <button
                 type="button"
-                onClick={() => { setSaleType('combo'); setSelectedProduct(null) }}
+                onClick={() => { setSaleType('combo'); setItems([newItem()]) }}
                 className={`flex-1 py-2 transition-colors ${saleType === 'combo' ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
               >
                 Combo
@@ -156,40 +197,90 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
           )}
 
           {saleType === 'product' ? (
-            <>
-              <div className="space-y-1.5">
-                <Label>Producto *</Label>
-                <Select
-                  name="productId"
-                  required
-                  items={availableProducts.map(p => ({ value: String(p.id), label: `${p.name}${p.weightG ? ` ${p.weightG}g` : ''}${p.flavor ? ` · ${p.flavor}` : ''}` }))}
-                  onValueChange={v => setSelectedProduct(availableProducts.find(p => p.id === Number(v)) ?? null)}
-                >
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
-                  <SelectContent>
-                    {availableProducts.map(p => (
-                      <SelectItem key={p.id} value={String(p.id)}>
-                        {p.name}{p.weightG ? ` ${p.weightG}g` : ''}{p.flavor ? ` · ${p.flavor}` : ''} — stock: {p.stock}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedProduct && (
-                  <p className="text-xs text-muted-foreground">Stock: <strong>{selectedProduct.stock}</strong></p>
-                )}
-              </div>
+            <div className="space-y-3">
+              {items.map((item, idx) => {
+                const selectedProduct = availableProducts.find(p => String(p.id) === item.productId)
+                return (
+                  <div key={item.key} className="rounded-lg border border-border p-3 space-y-3 relative">
+                    {items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.key)}
+                        className="absolute top-2 right-2 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    <p className="text-xs font-medium text-muted-foreground">Producto {idx + 1}</p>
+                    <div className="space-y-1.5">
+                      <Select
+                        required
+                        value={item.productId}
+                        items={availableProducts.map(p => ({
+                          value: String(p.id),
+                          label: `${p.name}${p.weightG ? ` ${p.weightG}g` : ''}${p.flavor ? ` · ${p.flavor}` : ''}`,
+                        }))}
+                        onValueChange={v => handleProductSelect(item.key, v)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Seleccionar producto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableProducts.map(p => (
+                            <SelectItem key={p.id} value={String(p.id)}>
+                              {p.name}{p.weightG ? ` ${p.weightG}g` : ''}{p.flavor ? ` · ${p.flavor}` : ''} — stock: {p.stock}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedProduct && (
+                        <p className="text-xs text-muted-foreground">Stock disponible: <strong>{selectedProduct.stock}</strong></p>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Cantidad</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max={selectedProduct?.stock ?? undefined}
+                          required
+                          value={item.quantity}
+                          onChange={e => updateItem(item.key, { quantity: Number(e.target.value) })}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Precio unitario</Label>
+                        <Input
+                          type="number"
+                          step="1"
+                          required
+                          value={item.effectivePrice || ''}
+                          onChange={e => updateItem(item.key, { effectivePrice: Number(e.target.value) })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="quantity">Cantidad *</Label>
-                  <Input id="quantity" name="quantity" type="number" min="1" max={selectedProduct?.stock ?? undefined} required />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setItems(prev => [...prev, newItem()])}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" />Agregar producto
+              </Button>
+
+              {items.length > 1 && saleTotal > 0 && (
+                <div className="flex justify-between items-center rounded-lg bg-muted/50 px-3 py-2 text-sm">
+                  <span className="text-muted-foreground">Total venta</span>
+                  <span className="font-semibold">${saleTotal.toLocaleString('es-AR')}</span>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="effectivePrice">Precio *</Label>
-                  <Input id="effectivePrice" name="effectivePrice" type="number" step="1" required />
-                </div>
-              </div>
-            </>
+              )}
+            </div>
           ) : (
             <>
               <div className="space-y-1.5">
@@ -206,7 +297,6 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
                 </Select>
               </div>
 
-              {/* Group slot pickers */}
               {groupSlots.map(slot => {
                 const opts = products.filter(p =>
                   p.name === slot.productGroupName &&
@@ -275,7 +365,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
               <Label>Cliente</Label>
               <Combobox
                 value={selectedClientName}
-                onValueChange={v => handleClientChange(v as string | null)}
+                onValueChange={v => setSelectedClientId(v ? (clients.find(c => c.name === v)?.id ?? null) : null)}
               >
                 <ComboboxInput showClear placeholder="Buscar cliente..." className="w-full" />
                 <ComboboxContent>
