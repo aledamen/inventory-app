@@ -17,6 +17,7 @@ export async function createExpense(data: { type: string; total: number; date?: 
   })
   revalidatePath('/dashboard/expenses')
   revalidatePath('/dashboard')
+  revalidatePath('/dashboard/caja')
 }
 
 export async function updateExpense(id: number, data: { type: string; total: number; date?: Date }) {
@@ -27,10 +28,12 @@ export async function updateExpense(id: number, data: { type: string; total: num
   }).where(eq(expenses.id, id))
   revalidatePath('/dashboard/expenses')
   revalidatePath('/dashboard')
+  revalidatePath('/dashboard/caja')
 }
 
 export async function deleteExpense(id: number) {
   await db.delete(expenses).where(eq(expenses.id, id))
   revalidatePath('/dashboard/expenses')
   revalidatePath('/dashboard')
+  revalidatePath('/dashboard/caja')
 }

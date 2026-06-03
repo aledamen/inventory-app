@@ -101,6 +101,7 @@ export async function createMultiSale(data: {
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')
   revalidatePath('/dashboard/clients')
+  revalidatePath('/dashboard/caja')
   await revalidateCatalog()
 }
 
@@ -161,6 +162,7 @@ export async function createSale(data: {
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')
   revalidatePath('/dashboard/clients')
+  revalidatePath('/dashboard/caja')
   await revalidateCatalog()
 }
 
@@ -251,6 +253,7 @@ export async function updateSale(id: number, data: {
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')
   revalidatePath('/dashboard/clients')
+  revalidatePath('/dashboard/caja')
   await revalidateCatalog()
 }
 
@@ -280,5 +283,6 @@ export async function deleteSale(id: number) {
   revalidatePath('/dashboard/sales')
   revalidatePath('/dashboard/products')
   revalidatePath('/dashboard/clients')
+  revalidatePath('/dashboard/caja')
   await revalidateCatalog()
 }

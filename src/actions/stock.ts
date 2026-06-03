@@ -68,6 +68,7 @@ export async function createStockMovement(data: {
 
   revalidatePath('/dashboard/stock')
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/caja')
   await revalidateCatalog()
 }
 
@@ -110,6 +111,7 @@ export async function updateStockMovement(id: number, data: {
 
   revalidatePath('/dashboard/stock')
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/caja')
   await revalidateCatalog()
 }
 
@@ -127,5 +129,6 @@ export async function deleteStockMovement(id: number) {
 
   revalidatePath('/dashboard/stock')
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/caja')
   await revalidateCatalog()
 }

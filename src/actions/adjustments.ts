@@ -39,6 +39,7 @@ export async function createAdjustment(data: {
   })
   revalidatePath('/dashboard/adjustments')
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/caja')
 }
 
 export async function deleteAdjustment(id: number) {

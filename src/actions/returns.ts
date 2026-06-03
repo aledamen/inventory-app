@@ -48,6 +48,7 @@ export async function createReturn(data: {
   })
   revalidatePath('/dashboard/returns')
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/caja')
 }
 
 export async function updateReturn(id: number, data: {
@@ -86,6 +87,7 @@ export async function updateReturn(id: number, data: {
 
   revalidatePath('/dashboard/returns')
   revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard/caja')
 }
 
 export async function deleteReturn(id: number) {
