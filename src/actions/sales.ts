@@ -32,7 +32,7 @@ export async function getSales() {
     .leftJoin(flavors, eq(products.flavorId, flavors.id))
     .leftJoin(paymentMethods, eq(sales.paymentMethodId, paymentMethods.id))
     .leftJoin(clients, eq(sales.clientId, clients.id))
-    .orderBy(desc(sales.date))
+    .orderBy(desc(sales.date), desc(sales.saleNumber))
 }
 
 export async function createMultiSale(data: {
