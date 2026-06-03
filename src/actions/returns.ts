@@ -46,9 +46,7 @@ export async function createReturn(data: {
       .set({ stock: sql`${products.stock} + ${data.quantity}` })
       .where(eq(products.id, data.productId))
   })
-  revalidatePath('/dashboard/returns')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
 }
 
 export async function updateReturn(id: number, data: {
@@ -85,12 +83,10 @@ export async function updateReturn(id: number, data: {
     }).where(eq(returns.id, id))
   })
 
-  revalidatePath('/dashboard/returns')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
 }
 
 export async function deleteReturn(id: number) {
   await db.delete(returns).where(eq(returns.id, id))
-  revalidatePath('/dashboard/returns')
+  revalidatePath('/dashboard', 'layout')
 }

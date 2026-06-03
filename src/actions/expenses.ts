@@ -15,9 +15,7 @@ export async function createExpense(data: { type: string; total: number; date?: 
     total: String(data.total),
     date: data.date ?? new Date(),
   })
-  revalidatePath('/dashboard/expenses')
-  revalidatePath('/dashboard')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
 }
 
 export async function updateExpense(id: number, data: { type: string; total: number; date?: Date }) {
@@ -26,14 +24,10 @@ export async function updateExpense(id: number, data: { type: string; total: num
     total: String(data.total),
     ...(data.date ? { date: data.date } : {}),
   }).where(eq(expenses.id, id))
-  revalidatePath('/dashboard/expenses')
-  revalidatePath('/dashboard')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
 }
 
 export async function deleteExpense(id: number) {
   await db.delete(expenses).where(eq(expenses.id, id))
-  revalidatePath('/dashboard/expenses')
-  revalidatePath('/dashboard')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
 }

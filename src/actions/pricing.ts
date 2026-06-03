@@ -116,8 +116,7 @@ export async function updatePricing(id: number, data: {
     updatedAt: new Date(),
   }).where(eq(pricing.id, id))
 
-  revalidatePath('/dashboard/pricing')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }
 
@@ -179,8 +178,6 @@ export async function recalculateAllPricing() {
     }).where(eq(pricing.id, row.pricingId))
   }
 
-  revalidatePath('/dashboard/pricing')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }

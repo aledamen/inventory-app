@@ -98,10 +98,7 @@ export async function createMultiSale(data: {
     }
   })
 
-  revalidatePath('/dashboard/sales')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/clients')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }
 
@@ -159,10 +156,7 @@ export async function createSale(data: {
     })
     .where(eq(products.id, data.productId))
 
-  revalidatePath('/dashboard/sales')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/clients')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }
 
@@ -250,10 +244,7 @@ export async function updateSale(id: number, data: {
     }
   }
 
-  revalidatePath('/dashboard/sales')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/clients')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }
 
@@ -280,9 +271,6 @@ export async function deleteSale(id: number) {
       .where(eq(sales.saleNumber, saleNumber))
   }
 
-  revalidatePath('/dashboard/sales')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/clients')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }

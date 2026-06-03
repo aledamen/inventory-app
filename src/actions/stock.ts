@@ -66,9 +66,7 @@ export async function createStockMovement(data: {
       .where(eq(products.id, data.productId))
   })
 
-  revalidatePath('/dashboard/stock')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }
 
@@ -109,9 +107,7 @@ export async function updateStockMovement(id: number, data: {
       .where(eq(products.id, data.productId))
   })
 
-  revalidatePath('/dashboard/stock')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }
 
@@ -127,8 +123,6 @@ export async function deleteStockMovement(id: number) {
     await tx.delete(stockMovements).where(eq(stockMovements.id, id))
   })
 
-  revalidatePath('/dashboard/stock')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }

@@ -126,7 +126,7 @@ export async function createProduct(data: {
     cost: String(data.cost),
     stock: 0,
   })
-  revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }
 
@@ -159,15 +159,14 @@ export async function updateProduct(id: number, data: Partial<{
 
   if (cost !== undefined || rest.weightG !== undefined || rest.bagAssigned !== undefined) {
     await recalculatePricing(id)
-    revalidatePath('/dashboard/pricing')
   }
 
-  revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }
 
 export async function deleteProduct(id: number) {
   await db.delete(products).where(eq(products.id, id))
-  revalidatePath('/dashboard/products')
+  revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
 }

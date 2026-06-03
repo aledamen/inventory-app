@@ -218,7 +218,7 @@ export async function createCombo(data: ComboInput): Promise<{ id: number }> {
     )
   }
 
-  revalidatePath('/dashboard/combos')
+  revalidatePath('/dashboard', 'layout')
   revalidatePath('/api/catalog')
   return { id: combo.id }
 }
@@ -257,19 +257,19 @@ export async function updateCombo(id: number, data: Partial<ComboInput>) {
     }
   }
 
-  revalidatePath('/dashboard/combos')
+  revalidatePath('/dashboard', 'layout')
   revalidatePath('/api/catalog')
 }
 
 export async function deleteCombo(id: number) {
   await db.delete(combos).where(eq(combos.id, id))
-  revalidatePath('/dashboard/combos')
+  revalidatePath('/dashboard', 'layout')
   revalidatePath('/api/catalog')
 }
 
 export async function toggleComboVisible(id: number, visible: boolean) {
   await db.update(combos).set({ visible, updatedAt: new Date() }).where(eq(combos.id, id))
-  revalidatePath('/dashboard/combos')
+  revalidatePath('/dashboard', 'layout')
   revalidatePath('/api/catalog')
 }
 
@@ -395,7 +395,5 @@ export async function createComboSale(data: {
       .where(eq(products.id, item.resolvedProductId))
   }
 
-  revalidatePath('/dashboard/sales')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard')
+  revalidatePath('/dashboard', 'layout')
 }

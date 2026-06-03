@@ -37,12 +37,10 @@ export async function createAdjustment(data: {
       .set({ stock: sql`greatest(0, ${products.stock} + ${data.quantity})` })
       .where(eq(products.id, data.productId))
   })
-  revalidatePath('/dashboard/adjustments')
-  revalidatePath('/dashboard/products')
-  revalidatePath('/dashboard/caja')
+  revalidatePath('/dashboard', 'layout')
 }
 
 export async function deleteAdjustment(id: number) {
   await db.delete(stockAdjustments).where(eq(stockAdjustments.id, id))
-  revalidatePath('/dashboard/adjustments')
+  revalidatePath('/dashboard', 'layout')
 }
