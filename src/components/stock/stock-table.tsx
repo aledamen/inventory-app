@@ -17,15 +17,16 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet'
 
-type SortField = 'movementNumber' | 'date' | 'productName' | 'quantity' | 'unitCost' | 'total' | 'paymentMethod'
+type SortField = 'movementNumber' | 'date' | 'productName' | 'quantity' | 'unitCost' | 'total' | 'paymentMethod' | 'supplierName'
 
 type Props = {
   movements: StockMovementWithProduct[]
   products: ProductWithRelations[]
   lookups: { paymentMethods: { id: number; name: string }[] }
+  suppliers: { id: number; name: string }[]
 }
 
-export function StockTable({ movements, products, lookups }: Props) {
+export function StockTable({ movements, products, lookups, suppliers }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState<SortField>('date')
@@ -48,6 +49,7 @@ export function StockTable({ movements, products, lookups }: Props) {
           m.productName?.toLowerCase().includes(q) ||
           m.productSku?.toLowerCase().includes(q) ||
           m.paymentMethod?.toLowerCase().includes(q) ||
+          m.supplierName?.toLowerCase().includes(q) ||
           m.note?.toLowerCase().includes(q)
         )
       : [...movements]
@@ -62,6 +64,7 @@ export function StockTable({ movements, products, lookups }: Props) {
         case 'unitCost':       av = Number(a.unitCost ?? 0);        bv = Number(b.unitCost ?? 0);        break
         case 'total':          av = Number(a.total ?? 0);           bv = Number(b.total ?? 0);           break
         case 'paymentMethod':  av = a.paymentMethod ?? '';          bv = b.paymentMethod ?? '';          break
+        case 'supplierName':   av = a.supplierName ?? '';           bv = b.supplierName ?? '';           break
       }
       if (av < bv) return sortDir === 'asc' ? -1 : 1
       if (av > bv) return sortDir === 'asc' ? 1 : -1
@@ -124,6 +127,7 @@ export function StockTable({ movements, products, lookups }: Props) {
                 <SortHead field="quantity" className="text-right">Cant.</SortHead>
                 <SortHead field="unitCost" className="text-right">Costo unit.</SortHead>
                 <SortHead field="total" className="text-right">Total</SortHead>
+                <SortHead field="supplierName">Proveedor</SortHead>
                 <SortHead field="paymentMethod">Método pago</SortHead>
                 <TableHead>Nota</TableHead>
                 <TableHead className="w-20"></TableHead>
@@ -153,11 +157,12 @@ export function StockTable({ movements, products, lookups }: Props) {
                   <TableCell className="text-right">
                     {m.total ? `$${Number(m.total).toLocaleString('es-AR')}` : '—'}
                   </TableCell>
+                  <TableCell>{m.supplierName ?? '—'}</TableCell>
                   <TableCell>{m.paymentMethod ?? '—'}</TableCell>
                   <TableCell className="text-muted-foreground text-sm max-w-[12rem] truncate">{m.note ?? '—'}</TableCell>
                   <TableCell onClick={e => e.stopPropagation()}>
                     <div className="flex gap-1">
-                      <StockEditDialog movement={m} products={products} lookups={lookups} />
+                      <StockEditDialog movement={m} products={products} lookups={lookups} suppliers={suppliers} />
                       <Button
                         variant="ghost"
                         size="icon"
@@ -182,7 +187,7 @@ export function StockTable({ movements, products, lookups }: Props) {
                   <TableCell className="text-right font-semibold">
                     ${totals.total.toLocaleString('es-AR')}
                   </TableCell>
-                  <TableCell colSpan={3} />
+                  <TableCell colSpan={4} />
                 </TableRow>
               </TableFooter>
             )}
@@ -228,6 +233,10 @@ export function StockTable({ movements, products, lookups }: Props) {
                   <div>
                     <p className="text-xs text-muted-foreground">Método de pago</p>
                     <p className="text-sm font-medium mt-0.5">{selected.paymentMethod ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Proveedor</p>
+                    <p className="text-sm font-medium mt-0.5">{selected.supplierName ?? '—'}</p>
                   </div>
                 </div>
 

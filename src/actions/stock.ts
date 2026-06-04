@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/db'
-import { stockMovements, products, paymentMethods, flavors } from '@/db/schema'
+import { stockMovements, products, paymentMethods, flavors, suppliers } from '@/db/schema'
 import { eq, desc, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { revalidateCatalog } from '@/lib/catalog'
@@ -21,12 +21,15 @@ export async function getStockMovements() {
       total: stockMovements.total,
       paymentMethodId: stockMovements.paymentMethodId,
       paymentMethod: paymentMethods.name,
+      supplierId: stockMovements.supplierId,
+      supplierName: suppliers.name,
       note: stockMovements.note,
     })
     .from(stockMovements)
     .leftJoin(products, eq(stockMovements.productId, products.id))
     .leftJoin(flavors, eq(products.flavorId, flavors.id))
     .leftJoin(paymentMethods, eq(stockMovements.paymentMethodId, paymentMethods.id))
+    .leftJoin(suppliers, eq(stockMovements.supplierId, suppliers.id))
     .orderBy(desc(stockMovements.date))
 }
 
@@ -35,6 +38,7 @@ export async function createStockMovement(data: {
   quantity: number
   unitCost?: number
   paymentMethodId?: number
+  supplierId?: number
   note?: string
   date: Date
 }) {
@@ -52,8 +56,9 @@ export async function createStockMovement(data: {
       quantity: data.quantity,
       unitCost: data.unitCost ? String(data.unitCost) : null,
       total: data.unitCost ? String(data.unitCost * data.quantity) : null,
-      paymentMethodId: data.paymentMethodId,
-      note: data.note,
+      paymentMethodId: data.paymentMethodId ?? null,
+      supplierId: data.supplierId ?? null,
+      note: data.note ?? null,
       date: data.date,
     })
 
@@ -76,6 +81,7 @@ export async function updateStockMovement(id: number, data: {
   quantity: number
   unitCost?: number
   paymentMethodId?: number | null
+  supplierId?: number | null
   note?: string
   date: Date
 }) {
@@ -97,6 +103,7 @@ export async function updateStockMovement(id: number, data: {
       unitCost: data.unitCost ? String(data.unitCost) : null,
       total: data.unitCost ? String(data.unitCost * data.quantity) : null,
       paymentMethodId: data.paymentMethodId ?? null,
+      supplierId: data.supplierId ?? null,
       note: data.note ?? null,
       date: data.date,
     }).where(eq(stockMovements.id, id))

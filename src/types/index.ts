@@ -39,6 +39,8 @@ export type StockMovementWithProduct = {
   total: string | null
   paymentMethodId: number | null
   paymentMethod: string | null
+  supplierId: number | null
+  supplierName: string | null
   note: string | null
 }
 

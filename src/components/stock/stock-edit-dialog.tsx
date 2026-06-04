@@ -21,15 +21,19 @@ type Props = {
   movement: StockMovementWithProduct
   products: ProductWithRelations[]
   lookups: { paymentMethods: { id: number; name: string }[] }
+  suppliers: { id: number; name: string }[]
 }
 
-export function StockEditDialog({ movement, products, lookups }: Props) {
+export function StockEditDialog({ movement, products, lookups, suppliers }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [productId, setProductId] = useState(String(movement.productId))
   const [paymentMethodId, setPaymentMethodId] = useState(
     movement.paymentMethodId ? String(movement.paymentMethodId) : ''
+  )
+  const [supplierId, setSupplierId] = useState(
+    movement.supplierId ? String(movement.supplierId) : ''
   )
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -44,6 +48,7 @@ export function StockEditDialog({ movement, products, lookups }: Props) {
         quantity: Number(fd.get('quantity')),
         unitCost: fd.get('unitCost') ? Number(fd.get('unitCost')) : undefined,
         paymentMethodId: paymentMethodId ? Number(paymentMethodId) : null,
+        supplierId: supplierId ? Number(supplierId) : null,
         note: (fd.get('note') as string) || undefined,
         date: new Date(fd.get('date') as string),
       })
@@ -115,6 +120,18 @@ export function StockEditDialog({ movement, products, lookups }: Props) {
                 defaultValue={movement.unitCost ? Number(movement.unitCost) : ''}
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Proveedor</Label>
+            <Select value={supplierId} onValueChange={v => setSupplierId(v ?? '')} items={suppliers.map(s => ({ value: String(s.id), label: s.name }))}>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar proveedor" /></SelectTrigger>
+              <SelectContent>
+                {suppliers.map(s => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
