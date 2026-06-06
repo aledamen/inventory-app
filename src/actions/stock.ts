@@ -23,6 +23,7 @@ export async function getStockMovements() {
       paymentMethod: paymentMethods.name,
       supplierId: stockMovements.supplierId,
       supplierName: suppliers.name,
+      shippingCost: stockMovements.shippingCost,
       note: stockMovements.note,
     })
     .from(stockMovements)
@@ -30,7 +31,64 @@ export async function getStockMovements() {
     .leftJoin(flavors, eq(products.flavorId, flavors.id))
     .leftJoin(paymentMethods, eq(stockMovements.paymentMethodId, paymentMethods.id))
     .leftJoin(suppliers, eq(stockMovements.supplierId, suppliers.id))
-    .orderBy(desc(stockMovements.date))
+    .orderBy(desc(stockMovements.date), desc(stockMovements.movementNumber))
+}
+
+export async function createMultiStockMovement(data: {
+  items: { productId: number; quantity: number; unitCost?: number }[]
+  supplierId?: number
+  paymentMethodId?: number
+  shippingCost?: number
+  note?: string
+  date: Date
+}) {
+  if (data.items.length === 0) throw new Error('La entrada debe tener al menos un producto')
+
+  const lastNum = await db
+    .select({ max: sql<number>`max(${stockMovements.movementNumber})` })
+    .from(stockMovements)
+
+  const nextNum = (lastNum[0]?.max ?? 0) + 1
+  const shipping = data.shippingCost ?? 0
+
+  // Distribute shipping proportionally by item subtotal; fall back to equal split
+  const subtotals = data.items.map(i => (i.unitCost ?? 0) * i.quantity)
+  const purchaseSubtotal = subtotals.reduce((s, v) => s + v, 0)
+
+  function itemShipping(idx: number): number {
+    if (shipping === 0) return 0
+    if (purchaseSubtotal > 0) return shipping * (subtotals[idx] / purchaseSubtotal)
+    return shipping / data.items.length
+  }
+
+  await db.transaction(async (tx) => {
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i]
+      const subtotal = subtotals[i]
+      const totalWithShipping = subtotal + itemShipping(i)
+
+      await tx.insert(stockMovements).values({
+        movementNumber: nextNum,
+        type: 'entrada',
+        productId: item.productId,
+        quantity: item.quantity,
+        unitCost: item.unitCost ? String(item.unitCost) : null,
+        total: totalWithShipping > 0 ? String(totalWithShipping) : null,
+        shippingCost: shipping > 0 ? String(shipping) : null,
+        paymentMethodId: data.paymentMethodId ?? null,
+        supplierId: data.supplierId ?? null,
+        note: data.note ?? null,
+        date: data.date,
+      })
+
+      await tx.update(products)
+        .set({ stock: sql`${products.stock} + ${item.quantity}`, updatedAt: new Date() })
+        .where(eq(products.id, item.productId))
+    }
+  })
+
+  revalidatePath('/dashboard', 'layout')
+  await revalidateCatalog()
 }
 
 export async function createStockMovement(data: {

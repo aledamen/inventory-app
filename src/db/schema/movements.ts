@@ -12,6 +12,7 @@ export const stockMovements = pgTable('stock_movements', {
   quantity: integer('quantity').notNull(),
   total: numeric('total', { precision: 12, scale: 2 }),
   paymentMethodId: integer('payment_method_id').references(() => paymentMethods.id),
+  shippingCost: numeric('shipping_cost', { precision: 12, scale: 2 }),
   note: text('note'),
   date: timestamp('date').notNull(),
   createdAt: timestamp('created_at').defaultNow(),

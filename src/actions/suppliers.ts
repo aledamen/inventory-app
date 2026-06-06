@@ -61,7 +61,7 @@ export async function createSupplier(data: {
   notes?: string
 }) {
   await db.insert(suppliers).values(data)
-  revalidatePath('/dashboard/suppliers')
+  revalidatePath('/dashboard', 'layout')
 }
 
 export async function updateSupplier(id: number, data: {
@@ -73,10 +73,10 @@ export async function updateSupplier(id: number, data: {
   notes?: string | null
 }) {
   await db.update(suppliers).set({ ...data, updatedAt: new Date() }).where(eq(suppliers.id, id))
-  revalidatePath('/dashboard/suppliers')
+  revalidatePath('/dashboard', 'layout')
 }
 
 export async function deleteSupplier(id: number) {
   await db.delete(suppliers).where(eq(suppliers.id, id))
-  revalidatePath('/dashboard/suppliers')
+  revalidatePath('/dashboard', 'layout')
 }

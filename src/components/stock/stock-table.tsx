@@ -58,7 +58,7 @@ export function StockTable({ movements, products, lookups, suppliers }: Props) {
       let av: string | number, bv: string | number
       switch (sortField) {
         case 'movementNumber': av = a.movementNumber;               bv = b.movementNumber;               break
-        case 'date':           av = new Date(a.date).getTime();     bv = new Date(b.date).getTime();     break
+        case 'date':           av = new Date(a.date).getTime() * 10000 + a.movementNumber; bv = new Date(b.date).getTime() * 10000 + b.movementNumber; break
         case 'productName':    av = a.productName ?? '';            bv = b.productName ?? '';            break
         case 'quantity':       av = a.quantity;                     bv = b.quantity;                     break
         case 'unitCost':       av = Number(a.unitCost ?? 0);        bv = Number(b.unitCost ?? 0);        break
@@ -73,6 +73,19 @@ export function StockTable({ movements, products, lookups, suppliers }: Props) {
 
     return rows
   }, [movements, search, sortField, sortDir])
+
+  const grouped = useMemo(() => {
+    const map = new Map<number, StockMovementWithProduct[]>()
+    for (const m of filtered) {
+      map.set(m.movementNumber, [...(map.get(m.movementNumber) ?? []), m])
+    }
+    return Array.from(map.entries()).map(([num, rows]) => ({
+      movementNumber: num,
+      rows,
+      groupTotal: rows.reduce((s, m) => s + Number(m.total ?? 0), 0),
+      shippingCost: Number(rows[0]?.shippingCost ?? 0),
+    }))
+  }, [filtered])
 
   const totals = useMemo(() => ({
     quantity: filtered.reduce((s, m) => s + m.quantity, 0),
@@ -134,46 +147,68 @@ export function StockTable({ movements, products, lookups, suppliers }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 && (
+              {grouped.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     No hay movimientos
                   </TableCell>
                 </TableRow>
               )}
-              {filtered.map((m) => (
-                <TableRow key={m.id} className="cursor-pointer" onClick={() => setSelected(m)}>
-                  <TableCell className="text-muted-foreground">{m.movementNumber}</TableCell>
-                  <TableCell>{new Date(m.date).toLocaleDateString('es-AR')}</TableCell>
-                  <TableCell className="font-mono text-xs">{m.productSku}</TableCell>
-                  <TableCell>
-                    {m.productName}
-                    {m.productFlavor && <span className="text-muted-foreground"> · {m.productFlavor}</span>}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">{m.quantity}</TableCell>
-                  <TableCell className="text-right">
-                    {m.unitCost ? `$${Number(m.unitCost).toLocaleString('es-AR')}` : '—'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {m.total ? `$${Number(m.total).toLocaleString('es-AR')}` : '—'}
-                  </TableCell>
-                  <TableCell>{m.supplierName ?? '—'}</TableCell>
-                  <TableCell>{m.paymentMethod ?? '—'}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm max-w-[12rem] truncate">{m.note ?? '—'}</TableCell>
-                  <TableCell onClick={e => e.stopPropagation()}>
-                    <div className="flex gap-1">
-                      <StockEditDialog movement={m} products={products} lookups={lookups} suppliers={suppliers} />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(m.id, m.movementNumber)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+              {grouped.map((group) => (
+                <>
+                  {group.rows.map((m, rowIdx) => (
+                    <TableRow key={m.id} className="cursor-pointer" onClick={() => setSelected(m)}>
+                      {rowIdx === 0 && (
+                        <TableCell className="text-muted-foreground font-mono" rowSpan={group.rows.length}>
+                          {m.movementNumber}
+                        </TableCell>
+                      )}
+                      <TableCell>{new Date(m.date).toLocaleDateString('es-AR')}</TableCell>
+                      <TableCell className="font-mono text-xs">{m.productSku}</TableCell>
+                      <TableCell>
+                        {m.productName}
+                        {m.productFlavor && <span className="text-muted-foreground"> · {m.productFlavor}</span>}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">{m.quantity}</TableCell>
+                      <TableCell className="text-right">
+                        {m.unitCost ? `$${Number(m.unitCost).toLocaleString('es-AR')}` : '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {m.total ? `$${Number(m.total).toLocaleString('es-AR')}` : '—'}
+                      </TableCell>
+                      <TableCell>{m.supplierName ?? '—'}</TableCell>
+                      <TableCell>{m.paymentMethod ?? '—'}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm max-w-[12rem] truncate">{m.note ?? '—'}</TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
+                        <div className="flex gap-1">
+                          <StockEditDialog movement={m} products={products} lookups={lookups} suppliers={suppliers} />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(m.id, m.movementNumber)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {group.groupTotal > 0 && (
+                    <TableRow className="bg-muted/40 border-b-2">
+                      <TableCell colSpan={6} className="text-xs font-semibold text-muted-foreground uppercase tracking-wide py-1.5 pl-8">
+                        Total compra #{group.movementNumber}
+                        {group.shippingCost > 0 && (
+                          <span className="ml-2 font-normal">(incl. envío ${group.shippingCost.toLocaleString('es-AR', { maximumFractionDigits: 0 })})</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-sm py-1.5">
+                        ${group.groupTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                      </TableCell>
+                      <TableCell colSpan={4} />
+                    </TableRow>
+                  )}
+                </>
               ))}
             </TableBody>
             {filtered.length > 0 && (
