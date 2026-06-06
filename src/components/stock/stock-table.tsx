@@ -80,7 +80,7 @@ export function StockTable({ movements, products, lookups, suppliers }: Props) {
       map.set(m.movementNumber, [...(map.get(m.movementNumber) ?? []), m])
     }
     return Array.from(map.entries())
-      .sort(([a], [b]) => a - b)
+      .sort(([a], [b]) => b - a)
       .map(([num, rows]) => ({
         movementNumber: num,
         rows,
