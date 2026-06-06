@@ -177,6 +177,70 @@ export async function updateStockMovement(id: number, data: {
   await revalidateCatalog()
 }
 
+export async function updateMultiStockMovement(movementNumber: number, data: {
+  items: { productId: number; quantity: number; unitCost?: number }[]
+  supplierId?: number | null
+  paymentMethodId?: number | null
+  shippingCost?: number
+  note?: string
+  date: Date
+}) {
+  if (data.items.length === 0) throw new Error('La entrada debe tener al menos un producto')
+
+  const oldRows = await db.select().from(stockMovements)
+    .where(eq(stockMovements.movementNumber, movementNumber))
+
+  const shipping = data.shippingCost ?? 0
+  const subtotals = data.items.map(i => (i.unitCost ?? 0) * i.quantity)
+  const purchaseSubtotal = subtotals.reduce((s, v) => s + v, 0)
+
+  function itemShipping(idx: number): number {
+    if (shipping === 0) return 0
+    if (purchaseSubtotal > 0) return shipping * (subtotals[idx] / purchaseSubtotal)
+    return shipping / data.items.length
+  }
+
+  await db.transaction(async (tx) => {
+    // Reverse stock for all old rows
+    for (const row of oldRows) {
+      await tx.update(products)
+        .set({ stock: sql`${products.stock} - ${row.quantity}`, updatedAt: new Date() })
+        .where(eq(products.id, row.productId))
+    }
+
+    // Delete all old rows for this movementNumber
+    await tx.delete(stockMovements).where(eq(stockMovements.movementNumber, movementNumber))
+
+    // Insert new rows
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i]
+      const subtotal = subtotals[i]
+      const totalWithShipping = subtotal + itemShipping(i)
+
+      await tx.insert(stockMovements).values({
+        movementNumber,
+        type: 'entrada',
+        productId: item.productId,
+        quantity: item.quantity,
+        unitCost: item.unitCost ? String(item.unitCost) : null,
+        total: totalWithShipping > 0 ? String(totalWithShipping) : null,
+        shippingCost: shipping > 0 ? String(shipping) : null,
+        paymentMethodId: data.paymentMethodId ?? null,
+        supplierId: data.supplierId ?? null,
+        note: data.note ?? null,
+        date: data.date,
+      })
+
+      await tx.update(products)
+        .set({ stock: sql`${products.stock} + ${item.quantity}`, updatedAt: new Date() })
+        .where(eq(products.id, item.productId))
+    }
+  })
+
+  revalidatePath('/dashboard', 'layout')
+  await revalidateCatalog()
+}
+
 export async function deleteStockMovement(id: number) {
   const existing = await db.select().from(stockMovements).where(eq(stockMovements.id, id)).limit(1)
   if (!existing[0]) throw new Error('Movimiento no encontrado')

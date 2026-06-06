@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { StockEditDialog } from './stock-edit-dialog'
+import { StockEditGroupDialog } from './stock-edit-group-dialog'
 import { deleteStockMovement } from '@/actions/stock'
 import type { ProductWithRelations, StockMovementWithProduct } from '@/types'
 import { Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
@@ -180,34 +180,38 @@ export function StockTable({ movements, products, lookups, suppliers }: Props) {
                       <TableCell>{m.paymentMethod ?? '—'}</TableCell>
                       <TableCell className="text-muted-foreground text-sm max-w-[12rem] truncate">{m.note ?? '—'}</TableCell>
                       <TableCell onClick={e => e.stopPropagation()}>
-                        <div className="flex gap-1">
-                          <StockEditDialog movement={m} products={products} lookups={lookups} suppliers={suppliers} />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(m.id, m.movementNumber)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(m.id, m.movementNumber)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
-                  {group.groupTotal > 0 && (
-                    <TableRow className="bg-muted/40 border-b-2">
-                      <TableCell colSpan={6} className="text-xs font-semibold text-muted-foreground uppercase tracking-wide py-1.5 pl-8">
-                        Total compra #{group.movementNumber}
-                        {group.shippingCost > 0 && (
-                          <span className="ml-2 font-normal">(incl. envío ${group.shippingCost.toLocaleString('es-AR', { maximumFractionDigits: 0 })})</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-sm py-1.5">
-                        ${group.groupTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
-                      </TableCell>
-                      <TableCell colSpan={4} />
-                    </TableRow>
-                  )}
+                  <TableRow className="bg-muted/40 border-b-2">
+                    <TableCell colSpan={6} className="text-xs font-semibold text-muted-foreground uppercase tracking-wide py-1.5 pl-8">
+                      Total compra #{group.movementNumber}
+                      {group.shippingCost > 0 && (
+                        <span className="ml-2 font-normal normal-case">(incl. envío ${group.shippingCost.toLocaleString('es-AR', { maximumFractionDigits: 0 })})</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold text-sm py-1.5">
+                      {group.groupTotal > 0 ? `$${group.groupTotal.toLocaleString('es-AR', { maximumFractionDigits: 0 })}` : '—'}
+                    </TableCell>
+                    <TableCell colSpan={3} />
+                    <TableCell className="py-1.5" onClick={e => e.stopPropagation()}>
+                      <StockEditGroupDialog
+                        movementNumber={group.movementNumber}
+                        rows={group.rows}
+                        products={products}
+                        lookups={lookups}
+                        suppliers={suppliers}
+                      />
+                    </TableCell>
+                  </TableRow>
                 </>
               ))}
             </TableBody>
