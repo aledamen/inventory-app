@@ -97,7 +97,7 @@ export function StockEditGroupDialog({ movementNumber, rows, products, lookups, 
       <DialogTrigger render={<Button variant="ghost" size="icon" className="h-7 w-7" />}>
         <Pencil className="h-3.5 w-3.5" />
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar compra #{movementNumber}</DialogTitle>
         </DialogHeader>
