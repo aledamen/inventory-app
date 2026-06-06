@@ -98,7 +98,7 @@ export function StockFormDialog({ products, lookups, suppliers }: Props) {
       <DialogTrigger render={<Button />}>
         <Plus className="h-4 w-4 mr-2" />Nueva entrada
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nueva entrada de stock</DialogTitle>
         </DialogHeader>

@@ -79,12 +79,14 @@ export function StockTable({ movements, products, lookups, suppliers }: Props) {
     for (const m of filtered) {
       map.set(m.movementNumber, [...(map.get(m.movementNumber) ?? []), m])
     }
-    return Array.from(map.entries()).map(([num, rows]) => ({
-      movementNumber: num,
-      rows,
-      groupTotal: rows.reduce((s, m) => s + Number(m.total ?? 0), 0),
-      shippingCost: Number(rows[0]?.shippingCost ?? 0),
-    }))
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([num, rows]) => ({
+        movementNumber: num,
+        rows,
+        groupTotal: rows.reduce((s, m) => s + Number(m.total ?? 0), 0),
+        shippingCost: Number(rows[0]?.shippingCost ?? 0),
+      }))
   }, [filtered])
 
   const totals = useMemo(() => ({
