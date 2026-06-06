@@ -26,7 +26,7 @@ export function ExpenseFormDialog() {
       await createExpense({
         type: fd.get('type') as string,
         total: Number(fd.get('total')),
-        date: fd.get('date') ? new Date(fd.get('date') as string) : new Date(),
+        date: fd.get('date') ? new Date(`${fd.get('date') as string}T00:00:00`) : new Date(),
       })
       toast.success('Gasto registrado')
       setOpen(false)

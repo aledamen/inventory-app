@@ -106,6 +106,7 @@ export async function updateStockMovement(id: number, data: {
       supplierId: data.supplierId ?? null,
       note: data.note ?? null,
       date: data.date,
+      updatedAt: new Date(),
     }).where(eq(stockMovements.id, id))
 
     // Apply new stock addition

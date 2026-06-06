@@ -119,7 +119,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
     const fd = new FormData(e.currentTarget)
 
     try {
-      const date = fd.get('date') ? new Date(fd.get('date') as string) : new Date()
+      const date = fd.get('date') ? new Date(`${fd.get('date') as string}T00:00:00`) : new Date()
       const paymentMethodId = fd.get('paymentMethodId') ? Number(fd.get('paymentMethodId')) : undefined
       const notes = (fd.get('notes') as string) || undefined
 

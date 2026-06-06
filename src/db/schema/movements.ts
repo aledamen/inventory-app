@@ -15,6 +15,7 @@ export const stockMovements = pgTable('stock_movements', {
   note: text('note'),
   date: timestamp('date').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 })
 
 export const sales = pgTable('sales', {
@@ -34,6 +35,7 @@ export const sales = pgTable('sales', {
   notes: text('notes'),
   date: timestamp('date').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 })
 
 export const expenses = pgTable('expenses', {
@@ -41,6 +43,7 @@ export const expenses = pgTable('expenses', {
   type: text('type').notNull(),
   total: numeric('total', { precision: 12, scale: 2 }).notNull(),
   date: timestamp('date').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 })
 
 export const capitalMovements = pgTable('capital_movements', {
@@ -50,4 +53,5 @@ export const capitalMovements = pgTable('capital_movements', {
   notes: text('notes'),
   date: timestamp('date').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 })

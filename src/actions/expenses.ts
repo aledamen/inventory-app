@@ -23,6 +23,7 @@ export async function updateExpense(id: number, data: { type: string; total: num
     type: data.type,
     total: String(data.total),
     ...(data.date ? { date: data.date } : {}),
+    updatedAt: new Date(),
   }).where(eq(expenses.id, id))
   revalidatePath('/dashboard', 'layout')
 }

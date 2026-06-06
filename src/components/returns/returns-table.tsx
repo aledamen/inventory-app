@@ -74,7 +74,7 @@ function ReturnEditDialog({ ret, products, clients }: { ret: Return; products: P
         quantity: Number(fd.get('quantity')),
         reason: (fd.get('reason') as string) || undefined,
         refundAmount: fd.get('refundAmount') ? Number(fd.get('refundAmount')) : null,
-        date: new Date(fd.get('date') as string),
+        date: new Date(`${fd.get('date') as string}T00:00:00`),
       })
       toast.success('Devolución actualizada')
       setOpen(false)

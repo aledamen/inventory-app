@@ -32,7 +32,7 @@ export function CapitalFormDialog() {
         type,
         amount: Number(fd.get('amount')),
         notes: (fd.get('notes') as string) || undefined,
-        date: fd.get('date') ? new Date(fd.get('date') as string) : new Date(),
+        date: fd.get('date') ? new Date(`${fd.get('date') as string}T00:00:00`) : new Date(),
       })
       toast.success(type === 'aporte' ? 'Aporte registrado' : 'Retiro registrado')
       setOpen(false)

@@ -80,6 +80,7 @@ export async function updateReturn(id: number, data: {
       reason: data.reason ?? null,
       refundAmount: data.refundAmount ? String(data.refundAmount) : null,
       date: data.date,
+      updatedAt: new Date(),
     }).where(eq(returns.id, id))
   })
 

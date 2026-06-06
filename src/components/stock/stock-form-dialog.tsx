@@ -42,7 +42,7 @@ export function StockFormDialog({ products, lookups, suppliers }: Props) {
         paymentMethodId: fd.get('paymentMethodId') ? Number(fd.get('paymentMethodId')) : undefined,
         supplierId: supplierId ? Number(supplierId) : undefined,
         note: fd.get('note') as string || undefined,
-        date: fd.get('date') ? new Date(fd.get('date') as string) : new Date(),
+        date: fd.get('date') ? new Date(`${fd.get('date') as string}T00:00:00`) : new Date(),
       })
       toast.success('Entrada registrada')
       setOpen(false)

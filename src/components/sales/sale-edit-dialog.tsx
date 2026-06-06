@@ -59,7 +59,7 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
         paymentMethodId: paymentMethodId ? Number(paymentMethodId) : null,
         clientId: selectedClientId,
         notes: (fd.get('notes') as string) || undefined,
-        date: new Date(fd.get('date') as string),
+        date: new Date(`${fd.get('date') as string}T00:00:00`),
       })
       toast.success('Venta actualizada')
       setOpen(false)

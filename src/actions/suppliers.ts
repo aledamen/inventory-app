@@ -72,7 +72,7 @@ export async function updateSupplier(id: number, data: {
   contactName?: string | null
   notes?: string | null
 }) {
-  await db.update(suppliers).set(data).where(eq(suppliers.id, id))
+  await db.update(suppliers).set({ ...data, updatedAt: new Date() }).where(eq(suppliers.id, id))
   revalidatePath('/dashboard/suppliers')
 }
 

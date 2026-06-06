@@ -68,7 +68,7 @@ export async function updateClient(id: number, data: {
   address?: string | null
   notes?: string | null
 }) {
-  await db.update(clients).set(data).where(eq(clients.id, id))
+  await db.update(clients).set({ ...data, updatedAt: new Date() }).where(eq(clients.id, id))
   revalidatePath('/dashboard', 'layout')
 }
 

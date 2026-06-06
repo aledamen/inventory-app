@@ -10,6 +10,7 @@ export const clients = pgTable('clients', {
   address: text('address'),
   notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 })
 
 export const suppliers = pgTable('suppliers', {
@@ -21,6 +22,7 @@ export const suppliers = pgTable('suppliers', {
   contactName: text('contact_name'),
   notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 })
 
 export const returns = pgTable('returns', {
@@ -33,6 +35,7 @@ export const returns = pgTable('returns', {
   refundAmount: numeric('refund_amount', { precision: 12, scale: 2 }),
   date: timestamp('date').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 })
 
 export const stockAdjustments = pgTable('stock_adjustments', {
@@ -66,6 +69,7 @@ export const orders = pgTable('orders', {
   paymentMethodId: integer('payment_method_id').references(() => paymentMethods.id),
   date: timestamp('date').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 })
 
 export const orderItems = pgTable('order_items', {

@@ -210,6 +210,7 @@ export async function updateSale(id: number, data: {
     clientId: data.clientId ?? null,
     notes: data.notes ?? null,
     date: data.date,
+    updatedAt: new Date(),
   }).where(eq(sales.id, id))
 
   await db.update(products)

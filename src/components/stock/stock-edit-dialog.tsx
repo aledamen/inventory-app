@@ -50,7 +50,7 @@ export function StockEditDialog({ movement, products, lookups, suppliers }: Prop
         paymentMethodId: paymentMethodId ? Number(paymentMethodId) : null,
         supplierId: supplierId ? Number(supplierId) : null,
         note: (fd.get('note') as string) || undefined,
-        date: new Date(fd.get('date') as string),
+        date: new Date(`${fd.get('date') as string}T00:00:00`),
       })
       toast.success('Entrada actualizada')
       setOpen(false)
