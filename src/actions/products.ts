@@ -120,14 +120,19 @@ export async function createProduct(data: {
   type?: string
   bagAssigned?: string
   notes?: string
-}) {
-  await db.insert(products).values({
+}): Promise<{ id: number }> {
+  const [newProduct] = await db.insert(products).values({
     ...data,
     cost: String(data.cost),
     stock: 0,
-  })
+  }).returning({ id: products.id })
+
+  await db.insert(pricing).values({ productId: newProduct.id })
+  await recalculatePricing(newProduct.id)
+
   revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()
+  return newProduct
 }
 
 export async function updateProduct(id: number, data: Partial<{

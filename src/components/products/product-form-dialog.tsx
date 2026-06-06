@@ -39,6 +39,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
   const [uploading, setUploading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(product?.imageUrl ?? null)
   const [dragOver, setDragOver] = useState(false)
+  const [createdProductId, setCreatedProductId] = useState<number | null>(null)
   const [bannerId, setBannerId] = useState<string>(product?.bannerId ? String(product.bannerId) : '')
   const [categoryId, setCategoryId] = useState<string>(String(lookups.categories.find(c => c.name === product?.category)?.id ?? ''))
   const [brandId, setBrandId] = useState<string>(String(lookups.brands.find(b => b.name === product?.brand)?.id ?? ''))
@@ -70,12 +71,14 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
       if (mode === 'edit' && product) {
         await updateProduct(product.id, data)
         toast.success('Producto actualizado')
+        setOpen(false)
+        router.refresh()
       } else {
-        await createProduct(data)
-        toast.success('Producto creado')
+        const newProduct = await createProduct(data)
+        toast.success('Producto creado — podés subir la imagen ahora')
+        setCreatedProductId(newProduct.id)
+        router.refresh()
       }
-      setOpen(false)
-      router.refresh()
     } catch {
       toast.error('Error al guardar')
     } finally {
@@ -84,13 +87,14 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
   }
 
   async function handleImageFile(file: File) {
-    if (!product?.id) return toast.error('Guardá el producto primero antes de subir imagen')
+    const productId = product?.id ?? createdProductId
+    if (!productId) return toast.error('Guardá el producto primero antes de subir imagen')
     if (!file.type.startsWith('image/')) return toast.error('El archivo debe ser una imagen')
     setUploading(true)
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const url = await uploadProductImage(product.id, fd)
+      const url = await uploadProductImage(productId, fd)
       setImageUrl(url)
       toast.success('Imagen subida')
       router.refresh()
@@ -128,7 +132,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setCreatedProductId(null) }}>
       {mode === 'edit'
         ? <DialogTrigger render={<Button variant="ghost" size="icon" className="h-8 w-8" />}><Pencil className="h-3.5 w-3.5" /></DialogTrigger>
         : <DialogTrigger render={<Button />}><Plus className="h-4 w-4 mr-2" />Nuevo producto</DialogTrigger>
@@ -138,10 +142,10 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
           <DialogTitle>{mode === 'edit' ? 'Editar producto' : 'Nuevo producto'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className={mode === 'edit' ? 'grid sm:grid-cols-[220px_1fr] gap-6' : 'space-y-4'}>
+          <div className={(mode === 'edit' || createdProductId) ? 'grid sm:grid-cols-[220px_1fr] gap-6' : 'space-y-4'}>
 
-          {/* Left column: image + banner (edit only) */}
-          {mode === 'edit' && (
+          {/* Left column: image (edit mode OR just after creation) */}
+          {(mode === 'edit' || createdProductId) && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Imagen del catálogo</Label>
@@ -216,8 +220,8 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
             </div>
           )}
 
-          {/* Right column (or full width in create mode) */}
-          <div className="space-y-4">
+          {/* Right column: hidden after creation (image-only state) */}
+          <div className={`space-y-4 ${createdProductId ? 'hidden' : ''}`}>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="sku">SKU *</Label>
@@ -331,10 +335,18 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Guardando...' : mode === 'edit' ? 'Guardar' : 'Crear'}
-            </Button>
+            {createdProductId ? (
+              <Button type="button" onClick={() => { setOpen(false); setCreatedProductId(null) }}>
+                Listo
+              </Button>
+            ) : (
+              <>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Guardando...' : mode === 'edit' ? 'Guardar' : 'Crear'}
+                </Button>
+              </>
+            )}
           </div>
           </div>{/* end right column */}
           </div>{/* end grid wrapper */}
