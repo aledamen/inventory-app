@@ -1,8 +1,12 @@
 import { getCouponAnalytics } from '@/actions/coupons'
+import { getPendingDeliveries } from '@/actions/influencer-compensations'
 import { MarketingAnalyticsClient } from '@/components/marketing/marketing-analytics-client'
 
 export default async function MarketingPage() {
-  const { influencerStats, monthlyStats, useDetails } = await getCouponAnalytics()
+  const [{ influencerStats, monthlyStats, useDetails }, pendingDeliveries] = await Promise.all([
+    getCouponAnalytics(),
+    getPendingDeliveries(),
+  ])
   return (
     <div className="space-y-6">
       <div>
@@ -13,6 +17,7 @@ export default async function MarketingPage() {
         influencerStats={influencerStats}
         monthlyStats={monthlyStats}
         useDetails={useDetails}
+        pendingDeliveries={pendingDeliveries}
       />
     </div>
   )

@@ -16,10 +16,11 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import Link from 'next/link'
 import { createInfluencer, updateInfluencer, deleteInfluencer } from '@/actions/influencers'
 import type { Influencer } from '@/actions/influencers'
 import type { SocialNetwork } from '@/actions/social-networks'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 
 type Props = {
@@ -188,6 +189,12 @@ export function InfluencersClient({ influencers, socialNetworks }: Props) {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
+                    <Link
+                      href={`/dashboard/influencers/${inf.id}`}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />Ver perfil
+                    </Link>
                     <InfluencerDialog influencer={inf} socialNetworks={socialNetworks} mode="edit" />
                     <Button
                       variant="ghost"

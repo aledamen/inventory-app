@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
@@ -9,11 +10,13 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from '@/components/ui/tabs'
 import type { InfluencerStat, MonthlyStat, CouponUseDetail } from '@/actions/coupons'
+import type { PendingDeliveryRow } from '@/actions/influencer-compensations'
 
 type Props = {
   influencerStats: InfluencerStat[]
   monthlyStats: MonthlyStat[]
   useDetails: CouponUseDetail[]
+  pendingDeliveries: PendingDeliveryRow[]
 }
 
 function fmt(n: number) {
@@ -26,7 +29,16 @@ function fmtMonth(m: string) {
   return `${months[Number(month) - 1]} ${year}`
 }
 
-export function MarketingAnalyticsClient({ influencerStats, monthlyStats, useDetails }: Props) {
+function deliveryTriggerLabel(trigger: string) {
+  switch (trigger) {
+    case 'milestone_sales': return 'Meta ventas'
+    case 'milestone_revenue': return 'Meta revenue'
+    case 'post': return 'Posteo'
+    default: return 'Manual'
+  }
+}
+
+export function MarketingAnalyticsClient({ influencerStats, monthlyStats, useDetails, pendingDeliveries }: Props) {
   const [tab, setTab] = useState('influencers')
 
   const totalRevenue = influencerStats.reduce((s, i) => s + i.totalRevenue, 0)
@@ -48,6 +60,55 @@ export function MarketingAnalyticsClient({ influencerStats, monthlyStats, useDet
           </div>
         ))}
       </div>
+
+      {/* Pending deliveries */}
+      {pendingDeliveries.length > 0 && (
+        <div className="rounded-xl border border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/20 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold uppercase tracking-widest text-orange-600 dark:text-orange-400">
+              Compensaciones pendientes — {pendingDeliveries.length}
+            </p>
+          </div>
+          <div className="rounded-lg border border-orange-200 dark:border-orange-800 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Influencer</TableHead>
+                  <TableHead>Producto</TableHead>
+                  <TableHead>Cant.</TableHead>
+                  <TableHead>Origen</TableHead>
+                  <TableHead>Hace</TableHead>
+                  <TableHead className="text-right">Acción</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingDeliveries.map(d => (
+                  <TableRow key={d.deliveryId}>
+                    <TableCell className="font-medium">{d.influencerName}</TableCell>
+                    <TableCell>{d.productName}</TableCell>
+                    <TableCell>{d.quantity}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {deliveryTriggerLabel(d.trigger)}
+                      {d.triggerRef && <span className="ml-1 text-xs">· {d.triggerRef}</span>}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {d.daysAgo === 0 ? 'Hoy' : `${d.daysAgo}d`}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Link
+                        href={`/dashboard/influencers/${d.influencerId}`}
+                        className="inline-flex items-center px-2.5 py-1 text-xs rounded-md border border-border hover:bg-accent transition-colors"
+                      >
+                        Ver
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
