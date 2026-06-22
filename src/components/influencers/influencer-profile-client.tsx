@@ -190,40 +190,41 @@ function RuleDialog({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
               <Label>Producto a dar</Label>
-              <Select
-                name="rewardProductId"
-                defaultValue={rule?.rewardProductId ? String(rule.rewardProductId) : ''}
-                items={[
-                  { value: '', label: 'Sin especificar' },
-                  ...products.map(p => ({ value: String(p.id), label: p.flavor ? `${p.name} (${p.flavor})` : p.name })),
-                ]}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Sin especificar</SelectItem>
-                  {products.map(p => (
-                    <SelectItem key={p.id} value={String(p.id)}>
-                      {p.flavor ? `${p.name} (${p.flavor})` : p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="rewardQuantity" className="text-muted-foreground">Cantidad</Label>
+                <Input
+                  id="rewardQuantity"
+                  name="rewardQuantity"
+                  type="number"
+                  min={1}
+                  defaultValue={rule?.rewardQuantity ?? 1}
+                  className="w-16 text-center"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rewardQuantity">Cantidad</Label>
-              <Input
-                id="rewardQuantity"
-                name="rewardQuantity"
-                type="number"
-                min={1}
-                defaultValue={rule?.rewardQuantity ?? 1}
-              />
-            </div>
+            <Select
+              name="rewardProductId"
+              defaultValue={rule?.rewardProductId ? String(rule.rewardProductId) : ''}
+              items={[
+                { value: '', label: 'Sin especificar' },
+                ...products.map(p => ({ value: String(p.id), label: p.flavor ? `${p.name} (${p.flavor})` : p.name })),
+              ]}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar producto" />
+              </SelectTrigger>
+              <SelectContent className="max-w-sm">
+                <SelectItem value="">Sin especificar</SelectItem>
+                {products.map(p => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.flavor ? `${p.name} (${p.flavor})` : p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">
@@ -502,12 +503,18 @@ function DeliveryFromPostDialog({
         <DialogHeader><DialogTitle>Registrar entrega por post</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Producto</Label>
+            <div className="flex items-center justify-between">
+              <Label>Producto</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="qty" className="text-muted-foreground">Cantidad</Label>
+                <Input id="qty" name="quantity" type="number" min={1} defaultValue={1} className="w-16 text-center" />
+              </div>
+            </div>
             <Select name="productId" defaultValue=""
               items={[{ value: '', label: 'Sin especificar' }, ...products.map(p => ({ value: String(p.id), label: p.flavor ? `${p.name} (${p.flavor})` : p.name }))]}
             >
               <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-sm">
                 <SelectItem value="">Sin especificar</SelectItem>
                 {products.map(p => (
                   <SelectItem key={p.id} value={String(p.id)}>
@@ -516,10 +523,6 @@ function DeliveryFromPostDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="qty">Cantidad</Label>
-            <Input id="qty" name="quantity" type="number" min={1} defaultValue={1} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="dnotes">Notas</Label>
@@ -664,27 +667,27 @@ function ManualDeliveryDialog({ influencerId, products }: { influencerId: number
       <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>Registrar entrega</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
               <Label>Producto</Label>
-              <Select name="productId" defaultValue=""
-                items={[{ value: '', label: 'Sin especificar' }, ...products.map(p => ({ value: String(p.id), label: p.flavor ? `${p.name} (${p.flavor})` : p.name }))]}
-              >
-                <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Sin especificar</SelectItem>
-                  {products.map(p => (
-                    <SelectItem key={p.id} value={String(p.id)}>
-                      {p.flavor ? `${p.name} (${p.flavor})` : p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="dqty" className="text-muted-foreground">Cantidad</Label>
+                <Input id="dqty" name="quantity" type="number" min={1} defaultValue={1} className="w-16 text-center" />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="dqty">Cantidad</Label>
-              <Input id="dqty" name="quantity" type="number" min={1} defaultValue={1} />
-            </div>
+            <Select name="productId" defaultValue=""
+              items={[{ value: '', label: 'Sin especificar' }, ...products.map(p => ({ value: String(p.id), label: p.flavor ? `${p.name} (${p.flavor})` : p.name }))]}
+            >
+              <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+              <SelectContent className="max-w-sm">
+                <SelectItem value="">Sin especificar</SelectItem>
+                {products.map(p => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.flavor ? `${p.name} (${p.flavor})` : p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
