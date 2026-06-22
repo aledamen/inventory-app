@@ -29,6 +29,7 @@ import {
   Ticket,
   Star,
   Share2,
+  BarChart2,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -57,6 +58,7 @@ const navItems = [
     { href: '/dashboard/influencers', label: 'Influencers', icon: Star },
     { href: '/dashboard/coupons', label: 'Cupones', icon: Ticket },
     { href: '/dashboard/redes-sociales', label: 'Redes Sociales', icon: Share2 },
+    { href: '/dashboard/marketing', label: 'Analítica', icon: BarChart2 },
   ]},
   { group: 'Catálogo', items: [
     { href: '/dashboard/cms', label: 'CMS', icon: Store },

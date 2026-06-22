@@ -1,8 +1,8 @@
 'use server'
 
 import { db } from '@/db'
-import { coupons, couponUses, influencers } from '@/db/schema'
-import { eq, desc, sql } from 'drizzle-orm'
+import { coupons, couponUses, influencers, socialNetworks } from '@/db/schema'
+import { eq, desc, sql, isNotNull } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 export type CouponFull = {
@@ -151,13 +151,27 @@ export async function toggleCouponActive(id: number, active: boolean) {
 }
 
 export type ValidateCouponResult =
-  | { valid: true; couponId: number; discountType: string; discountValue: number; discountAmount: number; finalAmount: number }
+  | { valid: true; couponId: number; discountType: string; discountValue: number; discountAmount: number; finalAmount: number; influencerName: string | null; influencerHandle: string | null }
   | { valid: false; error: string }
 
 export async function validateCoupon(code: string, amount: number): Promise<ValidateCouponResult> {
   const [coupon] = await db
-    .select()
+    .select({
+      id: coupons.id,
+      code: coupons.code,
+      active: coupons.active,
+      validFrom: coupons.validFrom,
+      validTo: coupons.validTo,
+      maxUses: coupons.maxUses,
+      usesCount: coupons.usesCount,
+      minOrderAmount: coupons.minOrderAmount,
+      discountType: coupons.discountType,
+      discountValue: coupons.discountValue,
+      influencerName: influencers.name,
+      influencerHandle: influencers.socialUsername,
+    })
     .from(coupons)
+    .leftJoin(influencers, eq(coupons.influencerId, influencers.id))
     .where(eq(coupons.code, code.toUpperCase().trim()))
     .limit(1)
 
@@ -184,6 +198,8 @@ export async function validateCoupon(code: string, amount: number): Promise<Vali
     discountValue,
     discountAmount,
     finalAmount: amount - discountAmount,
+    influencerName: coupon.influencerName ?? null,
+    influencerHandle: coupon.influencerHandle ?? null,
   }
 }
 
@@ -210,4 +226,170 @@ export async function recordCouponUse(data: {
   await db.update(coupons)
     .set({ usesCount: sql`${coupons.usesCount} + 1` })
     .where(eq(coupons.id, data.couponId))
+}
+
+export type InfluencerStat = {
+  influencerId: number
+  influencerName: string
+  influencerHandle: string | null
+  socialNetworkName: string | null
+  couponCode: string
+  couponId: number
+  salesCount: number
+  totalRevenue: number
+  totalDiscount: number
+  netRevenue: number
+}
+
+export type MonthlyStat = {
+  month: string
+  influencerName: string
+  couponCode: string
+  uses: number
+  revenue: number
+  discount: number
+}
+
+export type CouponUseDetail = {
+  id: number
+  couponCode: string | null
+  influencerName: string | null
+  clientName: string | null
+  source: string
+  originalAmount: number
+  discountApplied: number
+  finalAmount: number
+  saleId: number | null
+  usedAt: Date | null
+}
+
+export async function getCouponAnalytics(): Promise<{
+  influencerStats: InfluencerStat[]
+  monthlyStats: MonthlyStat[]
+  useDetails: CouponUseDetail[]
+}> {
+  const { sales } = await import('@/db/schema')
+
+  // Deduplicated sales with coupon (one row per sale_number)
+  const salesAgg = await db
+    .select({
+      saleNumber: sales.saleNumber,
+      couponId: sales.couponId,
+      totalSale: sql<string>`MAX(${sales.totalSale})`,
+      netProfit: sql<string>`SUM(${sales.netProfit})`,
+      date: sql<Date>`MAX(${sales.date})`,
+    })
+    .from(sales)
+    .where(isNotNull(sales.couponId))
+    .groupBy(sales.saleNumber, sales.couponId)
+
+  // coupon_uses with full detail
+  const uses = await db
+    .select({
+      id: couponUses.id,
+      couponId: couponUses.couponId,
+      couponCode: coupons.code,
+      influencerId: influencers.id,
+      influencerName: influencers.name,
+      influencerHandle: influencers.socialUsername,
+      socialNetworkName: socialNetworks.name,
+      clientName: couponUses.clientName,
+      source: couponUses.source,
+      originalAmount: couponUses.originalAmount,
+      discountApplied: couponUses.discountApplied,
+      finalAmount: couponUses.finalAmount,
+      saleId: couponUses.saleId,
+      usedAt: couponUses.usedAt,
+    })
+    .from(couponUses)
+    .leftJoin(coupons, eq(couponUses.couponId, coupons.id))
+    .leftJoin(influencers, eq(coupons.influencerId, influencers.id))
+    .leftJoin(socialNetworks, eq(influencers.socialNetworkId, socialNetworks.id))
+    .orderBy(desc(couponUses.usedAt))
+
+  // All coupons with influencer
+  const allCoupons = await db
+    .select({
+      id: coupons.id,
+      code: coupons.code,
+      influencerId: coupons.influencerId,
+      influencerName: influencers.name,
+      influencerHandle: influencers.socialUsername,
+      socialNetworkName: socialNetworks.name,
+    })
+    .from(coupons)
+    .leftJoin(influencers, eq(coupons.influencerId, influencers.id))
+    .leftJoin(socialNetworks, eq(influencers.socialNetworkId, socialNetworks.id))
+    .where(isNotNull(coupons.influencerId))
+
+  // Build influencer stats
+  const statsMap = new Map<number, InfluencerStat>()
+  for (const c of allCoupons) {
+    if (!c.influencerId) continue
+    const key = c.influencerId
+    const salesForCoupon = salesAgg.filter(s => s.couponId === c.id)
+    const totalRevenue = salesForCoupon.reduce((s, r) => s + Number(r.totalSale), 0)
+    const totalDiscount = uses.filter(u => u.couponId === c.id).reduce((s, u) => s + Number(u.discountApplied), 0)
+    const existing = statsMap.get(key)
+    if (existing) {
+      existing.salesCount += salesForCoupon.length
+      existing.totalRevenue += totalRevenue
+      existing.totalDiscount += totalDiscount
+      existing.netRevenue = existing.totalRevenue - existing.totalDiscount
+    } else {
+      statsMap.set(key, {
+        influencerId: c.influencerId,
+        influencerName: c.influencerName ?? '',
+        influencerHandle: c.influencerHandle ?? null,
+        socialNetworkName: c.socialNetworkName ?? null,
+        couponCode: c.code,
+        couponId: c.id,
+        salesCount: salesForCoupon.length,
+        totalRevenue,
+        totalDiscount,
+        netRevenue: totalRevenue - totalDiscount,
+      })
+    }
+  }
+
+  // Monthly stats
+  const monthlyMap = new Map<string, MonthlyStat>()
+  for (const s of salesAgg) {
+    if (!s.couponId) continue
+    const c = allCoupons.find(c => c.id === s.couponId)
+    if (!c?.influencerName) continue
+    const month = new Date(s.date).toISOString().slice(0, 7)
+    const key = `${month}-${c.id}`
+    const existing = monthlyMap.get(key)
+    const usesForSale = uses.filter(u => u.saleId === null && u.couponId === c.id)
+    if (existing) {
+      existing.revenue += Number(s.totalSale)
+    } else {
+      monthlyMap.set(key, {
+        month,
+        influencerName: c.influencerName ?? '',
+        couponCode: c.code,
+        uses: usesForSale.length,
+        revenue: Number(s.totalSale),
+        discount: uses.filter(u => u.couponId === c.id).reduce((sum, u) => sum + Number(u.discountApplied), 0),
+      })
+    }
+  }
+
+  return {
+    influencerStats: Array.from(statsMap.values()).sort((a, b) => b.totalRevenue - a.totalRevenue),
+    monthlyStats: Array.from(monthlyMap.values()).sort((a, b) => b.month.localeCompare(a.month)),
+    useDetails: uses.map(u => ({
+      id: u.id,
+      couponCode: u.couponCode,
+      influencerName: u.influencerName,
+      clientName: u.clientName,
+      source: u.source,
+      originalAmount: Number(u.originalAmount),
+      discountApplied: Number(u.discountApplied),
+      finalAmount: Number(u.finalAmount),
+      saleId: u.saleId,
+      usedAt: u.usedAt,
+    })),
+  }
 }
