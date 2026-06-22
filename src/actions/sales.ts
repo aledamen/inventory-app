@@ -41,6 +41,8 @@ export async function createMultiSale(data: {
   notes?: string
   date: Date
   clientId?: number
+  couponId?: number
+  discountApplied?: number
 }) {
   if (data.items.length === 0) throw new Error('La venta debe tener al menos un producto')
 
@@ -88,6 +90,8 @@ export async function createMultiSale(data: {
         grossProfit: String(row.saleValue),
         clientId: data.clientId ?? null,
         paymentMethodId: data.paymentMethodId,
+        couponId: data.couponId ?? null,
+        discountApplied: data.discountApplied != null ? String(data.discountApplied) : null,
         notes: data.notes,
         date: data.date,
       })

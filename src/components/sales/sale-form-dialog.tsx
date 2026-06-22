@@ -18,9 +18,11 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { createMultiSale } from '@/actions/sales'
 import { createComboSale } from '@/actions/combos'
+import { validateCoupon, recordCouponUse } from '@/actions/coupons'
 import type { ProductWithRelations } from '@/types'
 import type { ComboFull } from '@/actions/combos'
-import { Plus, Trash2 } from 'lucide-react'
+import type { CouponFull } from '@/actions/coupons'
+import { Plus, Trash2, Tag, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 type Client = { id: number; name: string; phone: string | null }
@@ -32,18 +34,26 @@ type SaleItem = {
   effectivePrice: number
 }
 
+type CouponState = {
+  id: number
+  discountType: string
+  discountValue: number
+  discountAmount: number
+} | null
+
 type Props = {
   products: ProductWithRelations[]
   lookups: { paymentMethods: {id:number,name:string}[] }
   combos?: ComboFull[]
   clients?: Client[]
+  coupons?: CouponFull[]
 }
 
 function newItem(): SaleItem {
   return { key: Math.random().toString(36).slice(2), productId: '', quantity: 1, effectivePrice: 0 }
 }
 
-export function SaleFormDialog({ products, lookups, combos = [], clients = [] }: Props) {
+export function SaleFormDialog({ products, lookups, combos = [], clients = [], coupons = [] }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -56,6 +66,11 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
   const [selectedCombo, setSelectedCombo] = useState<ComboFull | null>(null)
   const [groupSelections, setGroupSelections] = useState<{ itemId: number; productId: number }[]>([])
   const [comboPrice, setComboPrice] = useState('')
+
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('')
+  const [couponState, setCouponState] = useState<CouponState>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
 
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
   const selectedClientName = clients.find(c => c.id === selectedClientId)?.name ?? null
@@ -110,7 +125,58 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
     setSelectedCombo(null)
     setGroupSelections([])
     setComboPrice('')
+    setCouponCode('')
+    setCouponState(null)
     setSelectedClientId(null)
+  }
+
+  async function handleApplyCoupon() {
+    if (!couponCode.trim()) return
+    setCouponLoading(true)
+    try {
+      const total = saleType === 'combo'
+        ? Number(comboPrice) || 0
+        : items.reduce((s, i) => s + i.effectivePrice * i.quantity, 0)
+
+      const result = await validateCoupon(couponCode.trim(), total)
+      if (!result.valid) {
+        toast.error(result.error)
+        setCouponState(null)
+        return
+      }
+      setCouponState({
+        id: result.couponId,
+        discountType: result.discountType,
+        discountValue: result.discountValue,
+        discountAmount: result.discountAmount,
+      })
+
+      // Apply discount to item prices
+      if (saleType === 'combo') {
+        const discounted = Number(comboPrice) - result.discountAmount
+        setComboPrice(String(Math.max(0, discounted)))
+      } else {
+        const factor = result.discountType === 'percentage'
+          ? 1 - result.discountValue / 100
+          : null
+        setItems(prev => prev.map(item => ({
+          ...item,
+          effectivePrice: factor != null
+            ? Math.round(item.effectivePrice * factor)
+            : Math.max(0, Math.round(item.effectivePrice - result.discountAmount / prev.length)),
+        })))
+      }
+      toast.success(`Cupón aplicado: −$${result.discountAmount.toLocaleString('es-AR')}`)
+    } catch {
+      toast.error('Error al validar el cupón')
+    } finally {
+      setCouponLoading(false)
+    }
+  }
+
+  function handleRemoveCoupon() {
+    setCouponCode('')
+    setCouponState(null)
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -148,6 +214,21 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
           notes,
           date,
           clientId: selectedClientId ?? undefined,
+          couponId: couponState?.id,
+          discountApplied: couponState?.discountAmount,
+        })
+      }
+
+      if (couponState) {
+        const total = saleType === 'combo'
+          ? Number(comboPrice)
+          : items.reduce((s, i) => s + i.effectivePrice * i.quantity, 0)
+        await recordCouponUse({
+          couponId: couponState.id,
+          source: 'manual',
+          originalAmount: total + couponState.discountAmount,
+          discountApplied: couponState.discountAmount,
+          finalAmount: total,
         })
       }
 
@@ -360,6 +441,41 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [] }:
               )}
             </>
           )}
+
+          <div className="space-y-1.5">
+            <Label>Cupón de descuento</Label>
+            {couponState ? (
+              <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 px-3 py-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-green-600" />
+                  <span className="font-mono font-semibold">{couponCode.toUpperCase()}</span>
+                  <span className="text-green-700 dark:text-green-400">
+                    −${couponState.discountAmount.toLocaleString('es-AR')}
+                  </span>
+                </div>
+                <button type="button" onClick={handleRemoveCoupon} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  value={couponCode}
+                  onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Código de cupón"
+                  className="font-mono uppercase"
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleApplyCoupon())}
+                />
+                <Button
+                  type="button" variant="outline"
+                  onClick={handleApplyCoupon}
+                  disabled={!couponCode.trim() || couponLoading}
+                >
+                  {couponLoading ? '...' : 'Aplicar'}
+                </Button>
+              </div>
+            )}
+          </div>
 
           {clients.length > 0 && (
             <div className="space-y-1.5">

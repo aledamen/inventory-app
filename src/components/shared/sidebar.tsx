@@ -25,6 +25,10 @@ import {
   PackagePlus,
   Eye,
   Wallet,
+  History,
+  Ticket,
+  Star,
+  Share2,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -49,6 +53,11 @@ const navItems = [
     { href: '/dashboard/clients', label: 'Clientes', icon: Users },
     { href: '/dashboard/suppliers', label: 'Proveedores', icon: Truck },
   ]},
+  { group: 'Marketing', items: [
+    { href: '/dashboard/influencers', label: 'Influencers', icon: Star },
+    { href: '/dashboard/coupons', label: 'Cupones', icon: Ticket },
+    { href: '/dashboard/redes-sociales', label: 'Redes Sociales', icon: Share2 },
+  ]},
   { group: 'Catálogo', items: [
     { href: '/dashboard/cms', label: 'CMS', icon: Store },
     { href: '/dashboard/visitors', label: 'Visitantes', icon: Eye },
@@ -58,6 +67,7 @@ const navItems = [
     { href: '/dashboard/expenses', label: 'Gastos', icon: Receipt },
   ]},
   { group: 'Sistema', items: [
+    { href: '/dashboard/audit', label: 'Auditoría', icon: History },
     { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
   ]},
 ]

@@ -8,6 +8,13 @@
       "when": 1779825934350,
       "tag": "0000_petite_corsair",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782139894880,
+      "tag": "0001_flippant_captain_stacy",
+      "breakpoints": true
     }
   ]
 }

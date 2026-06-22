@@ -33,6 +33,8 @@ export const sales = pgTable('sales', {
   paymentMethodId: integer('payment_method_id').references(() => paymentMethods.id),
   netProfit: numeric('net_profit', { precision: 12, scale: 2 }),
   grossProfit: numeric('gross_profit', { precision: 12, scale: 2 }),
+  couponId: integer('coupon_id'),
+  discountApplied: numeric('discount_applied', { precision: 12, scale: 2 }),
   notes: text('notes'),
   date: timestamp('date').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
