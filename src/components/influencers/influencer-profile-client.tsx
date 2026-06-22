@@ -64,7 +64,8 @@ function deliveryTriggerLabel(trigger: string) {
 
 function StatsBar({ profile }: { profile: InfluencerProfile }) {
   const pendingCount = profile.deliveries.filter(d => d.status === 'pending').length
-  const uncompensatedPosts = profile.posts.filter(p => !p.compensated).length
+  const hasPerPostRule = profile.rules.some(r => r.trigger === 'per_post' && r.active)
+  const uncompensatedPosts = hasPerPostRule ? profile.posts.filter(p => !p.compensated).length : 0
 
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 mb-6">
@@ -548,6 +549,7 @@ function PostsTab({
   socialNetworks: SocialNetwork[]
 }) {
   const router = useRouter()
+  const hasPerPostRule = profile.rules.some(r => r.trigger === 'per_post' && r.active)
 
   async function handleDeletePost(id: number) {
     if (!confirm('¿Eliminar este post?')) return
@@ -560,7 +562,9 @@ function PostsTab({
     <div className="space-y-4">
       <div className="flex items-end justify-between">
         <p className="text-sm text-muted-foreground">
-          {profile.posts.filter(p => !p.compensated).length} posts sin compensar · {profile.posts.length} total
+          {hasPerPostRule
+            ? `${profile.posts.filter(p => !p.compensated).length} sin compensar · ${profile.posts.length} total`
+            : `${profile.posts.length} post${profile.posts.length !== 1 ? 's' : ''} registrado${profile.posts.length !== 1 ? 's' : ''}`}
         </p>
         <PostDialog influencerId={profile.id} socialNetworks={socialNetworks} />
       </div>
@@ -596,13 +600,15 @@ function PostsTab({
                     : <span className="text-xs text-muted-foreground">—</span>}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={p.compensated ? 'secondary' : 'outline'} className={p.compensated ? '' : 'border-orange-400 text-orange-600'}>
-                    {p.compensated ? 'Compensado' : 'Pendiente'}
-                  </Badge>
+                  {hasPerPostRule && (
+                    <Badge variant={p.compensated ? 'secondary' : 'outline'} className={p.compensated ? '' : 'border-orange-400 text-orange-600'}>
+                      {p.compensated ? 'Compensado' : 'Pendiente'}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
-                    {!p.compensated && (
+                    {hasPerPostRule && !p.compensated && (
                       <DeliveryFromPostDialog
                         influencerId={profile.id}
                         postId={p.id}
@@ -845,7 +851,8 @@ function DeliveriesTab({ profile, products }: { profile: InfluencerProfile; prod
 
 export function InfluencerProfileClient({ profile, products, socialNetworks }: Props) {
   const pendingCount = profile.deliveries.filter(d => d.status === 'pending').length
-  const uncompensatedPosts = profile.posts.filter(p => !p.compensated).length
+  const hasPerPostRule = profile.rules.some(r => r.trigger === 'per_post' && r.active)
+  const uncompensatedPosts = hasPerPostRule ? profile.posts.filter(p => !p.compensated).length : 0
 
   return (
     <div>
