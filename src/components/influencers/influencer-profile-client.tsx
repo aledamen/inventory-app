@@ -29,7 +29,7 @@ import type { SocialNetwork } from '@/actions/social-networks'
 import { Plus, Trash2, CheckCircle2, TrendingUp, Package, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 
-type Product = { id: number; name: string; flavor: string | null }
+type Product = { id: number; name: string; flavor: string | null; weightG: number | null }
 
 type Props = {
   profile: InfluencerProfile
@@ -210,7 +210,7 @@ function RuleDialog({
               defaultValue={rule?.rewardProductId ? String(rule.rewardProductId) : ''}
               items={[
                 { value: '', label: 'Sin especificar' },
-                ...products.map(p => ({ value: String(p.id), label: p.flavor ? `${p.name} (${p.flavor})` : p.name })),
+                ...products.map(p => ({ value: String(p.id), label: `${p.name}${p.weightG ? ` ${p.weightG}g` : ''}${p.flavor ? ` · ${p.flavor}` : ''}` })),
               ]}
             >
               <SelectTrigger className="w-full">
@@ -220,7 +220,7 @@ function RuleDialog({
                 <SelectItem value="">Sin especificar</SelectItem>
                 {products.map(p => (
                   <SelectItem key={p.id} value={String(p.id)}>
-                    {p.flavor ? `${p.name} (${p.flavor})` : p.name}
+                    {`${p.name}${p.weightG ? ` ${p.weightG}g` : ''}${p.flavor ? ` · ${p.flavor}` : ''}`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -511,14 +511,14 @@ function DeliveryFromPostDialog({
               </div>
             </div>
             <Select name="productId" defaultValue=""
-              items={[{ value: '', label: 'Sin especificar' }, ...products.map(p => ({ value: String(p.id), label: p.flavor ? `${p.name} (${p.flavor})` : p.name }))]}
+              items={[{ value: '', label: 'Sin especificar' }, ...products.map(p => ({ value: String(p.id), label: `${p.name}${p.weightG ? ` ${p.weightG}g` : ''}${p.flavor ? ` · ${p.flavor}` : ''}` }))]}
             >
               <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
               <SelectContent className="max-w-sm">
                 <SelectItem value="">Sin especificar</SelectItem>
                 {products.map(p => (
                   <SelectItem key={p.id} value={String(p.id)}>
-                    {p.flavor ? `${p.name} (${p.flavor})` : p.name}
+                    {`${p.name}${p.weightG ? ` ${p.weightG}g` : ''}${p.flavor ? ` · ${p.flavor}` : ''}`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -676,14 +676,14 @@ function ManualDeliveryDialog({ influencerId, products }: { influencerId: number
               </div>
             </div>
             <Select name="productId" defaultValue=""
-              items={[{ value: '', label: 'Sin especificar' }, ...products.map(p => ({ value: String(p.id), label: p.flavor ? `${p.name} (${p.flavor})` : p.name }))]}
+              items={[{ value: '', label: 'Sin especificar' }, ...products.map(p => ({ value: String(p.id), label: `${p.name}${p.weightG ? ` ${p.weightG}g` : ''}${p.flavor ? ` · ${p.flavor}` : ''}` }))]}
             >
               <SelectTrigger className="w-full"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
               <SelectContent className="max-w-sm">
                 <SelectItem value="">Sin especificar</SelectItem>
                 {products.map(p => (
                   <SelectItem key={p.id} value={String(p.id)}>
-                    {p.flavor ? `${p.name} (${p.flavor})` : p.name}
+                    {`${p.name}${p.weightG ? ` ${p.weightG}g` : ''}${p.flavor ? ` · ${p.flavor}` : ''}`}
                   </SelectItem>
                 ))}
               </SelectContent>
