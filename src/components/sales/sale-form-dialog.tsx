@@ -132,11 +132,13 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
 
   async function handleApplyCoupon() {
     if (!couponCode.trim()) return
+    if (saleType === 'combo') {
+      toast.error('Los cupones no aplican a combos')
+      return
+    }
     setCouponLoading(true)
     try {
-      const total = saleType === 'combo'
-        ? Number(comboPrice) || 0
-        : items.reduce((s, i) => s + i.effectivePrice * i.quantity, 0)
+      const total = items.reduce((s, i) => s + i.effectivePrice * i.quantity, 0)
 
       const result = await validateCoupon(couponCode.trim(), total)
       if (!result.valid) {
@@ -152,20 +154,15 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
       })
 
       // Apply discount to item prices
-      if (saleType === 'combo') {
-        const discounted = Number(comboPrice) - result.discountAmount
-        setComboPrice(String(Math.max(0, discounted)))
-      } else {
-        const factor = result.discountType === 'percentage'
-          ? 1 - result.discountValue / 100
-          : null
-        setItems(prev => prev.map(item => ({
-          ...item,
-          effectivePrice: factor != null
-            ? Math.round(item.effectivePrice * factor)
-            : Math.max(0, Math.round(item.effectivePrice - result.discountAmount / prev.length)),
-        })))
-      }
+      const factor = result.discountType === 'percentage'
+        ? 1 - result.discountValue / 100
+        : null
+      setItems(prev => prev.map(item => ({
+        ...item,
+        effectivePrice: factor != null
+          ? Math.round(item.effectivePrice * factor)
+          : Math.max(0, Math.round(item.effectivePrice - result.discountAmount / prev.length)),
+      })))
       toast.success(`Cupón aplicado: −$${result.discountAmount.toLocaleString('es-AR')}`)
     } catch {
       toast.error('Error al validar el cupón')
@@ -220,9 +217,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
       }
 
       if (couponState) {
-        const total = saleType === 'combo'
-          ? Number(comboPrice)
-          : items.reduce((s, i) => s + i.effectivePrice * i.quantity, 0)
+        const total = items.reduce((s, i) => s + i.effectivePrice * i.quantity, 0)
         await recordCouponUse({
           couponId: couponState.id,
           source: 'manual',
@@ -270,7 +265,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
               </button>
               <button
                 type="button"
-                onClick={() => { setSaleType('combo'); setItems([newItem()]) }}
+                onClick={() => { setSaleType('combo'); setItems([newItem()]); setCouponCode(''); setCouponState(null) }}
                 className={`flex-1 py-2 transition-colors ${saleType === 'combo' ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-muted'}`}
               >
                 Combo
