@@ -60,14 +60,22 @@ export function CapitalTable({ movements }: { movements: CapitalMovement[] }) {
           {sorted.map(m => (
             <TableRow key={m.id}>
               <TableCell>
-                <Badge variant={m.type === 'aporte' ? 'default' : 'secondary'}>
-                  {m.type === 'aporte' ? 'Aporte' : 'Retiro'}
+                <Badge variant={m.type === 'aporte' ? 'default' : m.type === 'retiro' ? 'secondary' : 'outline'}>
+                  {m.type === 'aporte' ? 'Aporte' : m.type === 'retiro' ? 'Retiro' : 'Traspaso'}
                 </Badge>
               </TableCell>
-              <TableCell className="text-muted-foreground text-sm">{m.notes ?? '—'}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {m.type === 'traspaso' && m.paymentMethodName
+                  ? `→ ${m.paymentMethodName}${m.notes ? ` · ${m.notes}` : ''}`
+                  : (m.notes ?? '—')}
+              </TableCell>
               <TableCell className="text-right font-medium tabular-nums">
-                <span className={m.type === 'aporte' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>
-                  {m.type === 'retiro' ? '−' : '+'}{$(Number(m.amount))}
+                <span className={
+                  m.type === 'aporte' ? 'text-emerald-600 dark:text-emerald-400'
+                    : m.type === 'retiro' ? 'text-red-600 dark:text-red-400'
+                    : 'text-muted-foreground'
+                }>
+                  {m.type === 'retiro' ? '−' : m.type === 'aporte' ? '+' : '↔'}{$(Number(m.amount))}
                 </span>
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">

@@ -16,11 +16,15 @@ import { createCapitalMovement } from '@/actions/capital'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
-export function CapitalFormDialog() {
+type PaymentMethod = { id: number; name: string }
+
+export function CapitalFormDialog({ paymentMethods = [] }: { paymentMethods?: PaymentMethod[] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [type, setType] = useState<'aporte' | 'retiro'>('aporte')
+  const [type, setType] = useState<'aporte' | 'retiro' | 'traspaso'>('aporte')
+
+  const paymentMethodLabel = type === 'traspaso' ? 'Va hacia *' : 'Método de pago *'
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -31,10 +35,13 @@ export function CapitalFormDialog() {
       await createCapitalMovement({
         type,
         amount: Number(fd.get('amount')),
+        paymentMethodId: Number(fd.get('paymentMethodId')),
         notes: (fd.get('notes') as string) || undefined,
         date: fd.get('date') ? new Date(`${fd.get('date') as string}T00:00:00`) : new Date(),
       })
-      toast.success(type === 'aporte' ? 'Aporte registrado' : 'Retiro registrado')
+      toast.success(
+        type === 'aporte' ? 'Aporte registrado' : type === 'retiro' ? 'Retiro registrado' : 'Traspaso registrado'
+      )
       setOpen(false)
       router.refresh()
     } catch {
@@ -56,13 +63,14 @@ export function CapitalFormDialog() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label>Tipo *</Label>
-            <Select value={type} onValueChange={v => setType(v as 'aporte' | 'retiro')}>
+            <Select value={type} onValueChange={v => setType(v as 'aporte' | 'retiro' | 'traspaso')}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="aporte">Aporte propio</SelectItem>
                 <SelectItem value="retiro">Retiro</SelectItem>
+                <SelectItem value="traspaso">Traspaso (efectivo ↔ banco)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -75,6 +83,26 @@ export function CapitalFormDialog() {
               <Label htmlFor="date">Fecha</Label>
               <Input id="date" name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{paymentMethodLabel}</Label>
+            <Select name="paymentMethodId" required items={paymentMethods.map(pm => ({ value: String(pm.id), label: pm.name }))}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar..." />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentMethods.map(pm => (
+                  <SelectItem key={pm.id} value={String(pm.id)}>
+                    {pm.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {type === 'traspaso' && (
+              <p className="text-xs text-muted-foreground">
+                Elegí a dónde va la plata (ej: sacaste efectivo y lo transferiste al banco → elegí &quot;transferencia&quot;).
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="notes">Notas</Label>

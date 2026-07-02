@@ -53,6 +53,7 @@ export const capitalMovements = pgTable('capital_movements', {
   id: serial('id').primaryKey(),
   type: text('type').notNull().default('aporte'), // 'aporte' | 'retiro'
   amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+  paymentMethodId: integer('payment_method_id').references(() => paymentMethods.id),
   notes: text('notes'),
   date: timestamp('date').notNull(),
   createdAt: timestamp('created_at').defaultNow(),

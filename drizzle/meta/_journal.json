@@ -15,6 +15,13 @@
       "when": 1782139894880,
       "tag": "0001_flippant_captain_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783001615587,
+      "tag": "0002_panoramic_rhodey",
+      "breakpoints": true
     }
   ]
 }

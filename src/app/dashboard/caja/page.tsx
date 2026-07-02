@@ -1,15 +1,17 @@
 import { getCapitalMovements, getCajaBalance } from '@/actions/capital'
+import { getAllLookups } from '@/actions/lookups'
 import { CapitalFormDialog } from '@/components/caja/capital-form-dialog'
 import { CapitalTable } from '@/components/caja/capital-table'
 import { KpiCard } from '@/components/dashboard/kpi-card'
-import { Wallet, TrendingUp, TrendingDown, ShoppingCart, ArrowDownToLine, Package, Info } from 'lucide-react'
+import { Wallet, Banknote, Landmark, TrendingUp, TrendingDown, ShoppingCart, ArrowDownToLine, Package, Info } from 'lucide-react'
 
 const $ = (n: number) => `$${n.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
 
 export default async function CajaPage() {
-  const [movements, balance] = await Promise.all([
+  const [movements, balance, lookups] = await Promise.all([
     getCapitalMovements(),
     getCajaBalance(),
+    getAllLookups(),
   ])
 
   return (
@@ -21,19 +23,33 @@ export default async function CajaPage() {
             Aportes + Ventas − Stock comprado − Gastos
           </p>
         </div>
-        <CapitalFormDialog />
+        <CapitalFormDialog paymentMethods={lookups.paymentMethods} />
       </div>
 
       {/* Activos del negocio */}
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Activos del negocio</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <KpiCard
             title="Efectivo líquido"
-            value={$(balance.efectivo)}
+            value={$(balance.efectivoLiquido)}
             sub="plata disponible para gastar"
-            variant={balance.efectivo >= 0 ? 'success' : 'danger'}
+            variant={balance.efectivoLiquido >= 0 ? 'success' : 'danger'}
             icon={<Wallet className="w-4 h-4" />}
+          />
+          <KpiCard
+            title="Efectivo en mano"
+            value={$(balance.efectivo)}
+            sub="billetes físicos, caja chica"
+            variant={balance.efectivo >= 0 ? 'success' : 'danger'}
+            icon={<Banknote className="w-4 h-4" />}
+          />
+          <KpiCard
+            title="Cuenta bancaria"
+            value={$(balance.cuentaBancaria)}
+            sub="transferencias + Mercado Pago"
+            variant={balance.cuentaBancaria >= 0 ? 'success' : 'danger'}
+            icon={<Landmark className="w-4 h-4" />}
           />
           <KpiCard
             title="Stock en mano"
@@ -43,14 +59,21 @@ export default async function CajaPage() {
             icon={<Package className="w-4 h-4" />}
             href="/dashboard/products"
           />
-          <KpiCard
-            title="Capital total"
-            value={$(balance.capitalTotal)}
-            sub="efectivo + stock al costo"
-            variant="success"
-            icon={<TrendingUp className="w-4 h-4" />}
-          />
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Los gastos aún no distinguen método de pago — se descuentan del efectivo en mano.
+        </p>
+      </div>
+
+      {/* Capital total */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <KpiCard
+          title="Capital total"
+          value={$(balance.capitalTotal)}
+          sub="efectivo + stock al costo"
+          variant="success"
+          icon={<TrendingUp className="w-4 h-4" />}
+        />
       </div>
 
       {/* Aporte calculado */}
@@ -134,8 +157,8 @@ export default async function CajaPage() {
             </>
           )}
           <span>=</span>
-          <span className={`font-bold ${balance.efectivo >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-            {$(balance.efectivo)} efectivo
+          <span className={`font-bold ${balance.efectivoLiquido >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+            {$(balance.efectivoLiquido)} efectivo líquido
           </span>
           <span>+</span>
           <span className="text-primary font-semibold">{$(balance.stockActualCosto)}</span>
