@@ -59,14 +59,14 @@ function CouponDialog({
 
     const data = {
       code: fd.get('code') as string,
-      description: (fd.get('description') as string) || undefined,
+      description: (fd.get('description') as string) || null,
       discountType,
       discountValue: Number(fd.get('discountValue')),
-      minOrderAmount: fd.get('minOrderAmount') ? Number(fd.get('minOrderAmount')) : undefined,
-      maxUses: fd.get('maxUses') ? Number(fd.get('maxUses')) : undefined,
+      minOrderAmount: fd.get('minOrderAmount') ? Number(fd.get('minOrderAmount')) : null,
+      maxUses: fd.get('maxUses') ? Number(fd.get('maxUses')) : null,
       active: fd.get('active') === 'on',
-      validFrom: fd.get('validFrom') ? new Date(fd.get('validFrom') as string) : undefined,
-      validTo: fd.get('validTo') ? new Date(fd.get('validTo') as string) : undefined,
+      validFrom: fd.get('validFrom') ? new Date(fd.get('validFrom') as string) : null,
+      validTo: fd.get('validTo') ? new Date(fd.get('validTo') as string) : null,
       influencerId: fd.get('influencerId') ? Number(fd.get('influencerId')) : null,
     }
 

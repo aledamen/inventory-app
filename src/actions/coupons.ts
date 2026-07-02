@@ -87,14 +87,14 @@ export async function getCouponUses(couponId?: number): Promise<CouponUse[]> {
 
 export async function createCoupon(data: {
   code: string
-  description?: string
+  description?: string | null
   discountType: 'percentage' | 'fixed'
   discountValue: number
-  minOrderAmount?: number
-  maxUses?: number
+  minOrderAmount?: number | null
+  maxUses?: number | null
   active?: boolean
-  validFrom?: Date
-  validTo?: Date
+  validFrom?: Date | null
+  validTo?: Date | null
   influencerId?: number | null
 }) {
   await db.insert(coupons).values({
