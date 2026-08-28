@@ -8,11 +8,16 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { createExpense } from '@/actions/expenses'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
-export function ExpenseFormDialog() {
+type PaymentMethod = { id: number; name: string }
+
+export function ExpenseFormDialog({ paymentMethods = [] }: { paymentMethods?: PaymentMethod[] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -26,6 +31,7 @@ export function ExpenseFormDialog() {
       await createExpense({
         type: fd.get('type') as string,
         total: Number(fd.get('total')),
+        paymentMethodId: Number(fd.get('paymentMethodId')),
         date: fd.get('date') ? new Date(`${fd.get('date') as string}T00:00:00`) : new Date(),
       })
       toast.success('Gasto registrado')
@@ -61,6 +67,21 @@ export function ExpenseFormDialog() {
               <Label htmlFor="date">Fecha</Label>
               <Input id="date" name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Método de pago *</Label>
+            <Select name="paymentMethodId" required items={paymentMethods.map(pm => ({ value: String(pm.id), label: pm.name }))}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar..." />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentMethods.map(pm => (
+                  <SelectItem key={pm.id} value={String(pm.id)}>
+                    {pm.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>

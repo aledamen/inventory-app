@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog'
@@ -178,6 +179,10 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (!selectedClientId) {
+      toast.error('Elegí un cliente')
+      return
+    }
     setLoading(true)
     const fd = new FormData(e.currentTarget)
 
@@ -194,7 +199,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
           paymentMethodId,
           notes,
           date,
-          clientId: selectedClientId ?? undefined,
+          clientId: selectedClientId,
           groupSelections,
         })
       } else {
@@ -210,7 +215,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
           paymentMethodId,
           notes,
           date,
-          clientId: selectedClientId ?? undefined,
+          clientId: selectedClientId,
           couponId: couponState?.id,
           discountApplied: couponState?.discountAmount,
         })
@@ -472,27 +477,33 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
             )}
           </div>
 
-          {clients.length > 0 && (
-            <div className="space-y-1.5">
-              <Label>Cliente</Label>
-              <Combobox
-                value={selectedClientName}
-                onValueChange={v => setSelectedClientId(v ? (clients.find(c => c.name === v)?.id ?? null) : null)}
-              >
-                <ComboboxInput showClear placeholder="Buscar cliente..." className="w-full" />
-                <ComboboxContent>
-                  <ComboboxList>
-                    <ComboboxEmpty>Sin resultados</ComboboxEmpty>
-                    {clients.map(c => (
-                      <ComboboxItem key={c.id} value={c.name}>
-                        {c.name}{c.phone ? ` · ${c.phone}` : ''}
-                      </ComboboxItem>
-                    ))}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-            </div>
-          )}
+          <div className="space-y-1.5">
+            <Label>Cliente *</Label>
+            <Combobox
+              value={selectedClientName}
+              onValueChange={v => setSelectedClientId(v ? (clients.find(c => c.name === v)?.id ?? null) : null)}
+            >
+              <ComboboxInput showClear placeholder="Buscar cliente..." className="w-full" />
+              <ComboboxContent>
+                <ComboboxList>
+                  <ComboboxEmpty>Sin resultados</ComboboxEmpty>
+                  {clients.map(c => (
+                    <ComboboxItem key={c.id} value={c.name}>
+                      {c.name}{c.phone ? ` · ${c.phone}` : ''}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+            {clients.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Todavía no hay clientes cargados.{' '}
+                <Link href="/dashboard/clients" className="text-primary underline underline-offset-2">
+                  Creá uno primero
+                </Link>.
+              </p>
+            )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">

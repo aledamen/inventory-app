@@ -304,9 +304,11 @@ export async function createComboSale(data: {
   paymentMethodId?: number
   notes?: string
   date: Date
-  clientId?: number
+  clientId: number
   groupSelections: { itemId: number; productId: number }[]
 }) {
+  if (!data.clientId) throw new Error('La venta debe tener un cliente')
+
   const items = await db
     .select({
       itemId: comboItems.id,
@@ -383,7 +385,7 @@ export async function createComboSale(data: {
       totalCost: String(totalCostLine),
       netProfit: String(netProfit),
       grossProfit: String(saleValue),
-      clientId: data.clientId ?? null,
+      clientId: data.clientId,
       paymentMethodId: data.paymentMethodId ?? null,
       notes: data.notes ?? null,
       date: data.date,

@@ -7,16 +7,20 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { updateExpense, deleteExpense } from '@/actions/expenses'
 import { Trash2, Pencil, Check, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-type Expense = { id: number; type: string; total: string; date: Date | null }
-type EditState = { type: string; total: string; date: string }
+type PaymentMethod = { id: number; name: string }
+type Expense = { id: number; type: string; total: string; paymentMethodId: number | null; paymentMethodName: string | null; date: Date | null }
+type EditState = { type: string; total: string; paymentMethodId: string; date: string }
 type SortField = 'type' | 'total' | 'date'
 
-export function ExpensesTable({ expenses }: { expenses: Expense[] }) {
+export function ExpensesTable({ expenses, paymentMethods = [] }: { expenses: Expense[]; paymentMethods?: PaymentMethod[] }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [sortField, setSortField] = useState<SortField>('date')
@@ -55,6 +59,7 @@ export function ExpensesTable({ expenses }: { expenses: Expense[] }) {
     setEditState({
       type: e.type,
       total: String(Number(e.total)),
+      paymentMethodId: e.paymentMethodId ? String(e.paymentMethodId) : 'none',
       date: e.date ? new Date(e.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     })
   }
@@ -63,7 +68,12 @@ export function ExpensesTable({ expenses }: { expenses: Expense[] }) {
     if (!editState) return
     setLoading(true)
     try {
-      await updateExpense(id, { type: editState.type, total: Number(editState.total), date: new Date(editState.date) })
+      await updateExpense(id, {
+        type: editState.type,
+        total: Number(editState.total),
+        paymentMethodId: editState.paymentMethodId === 'none' ? null : Number(editState.paymentMethodId),
+        date: new Date(editState.date),
+      })
       toast.success('Gasto actualizado')
       setEditingId(null)
       router.refresh()
@@ -103,6 +113,7 @@ export function ExpensesTable({ expenses }: { expenses: Expense[] }) {
             <TableRow>
               <SortHead field="type">Tipo</SortHead>
               <SortHead field="total" className="text-right">Total</SortHead>
+              <TableHead>Método de pago</TableHead>
               <SortHead field="date">Fecha</SortHead>
               <TableHead className="w-20"></TableHead>
             </TableRow>
@@ -110,7 +121,7 @@ export function ExpensesTable({ expenses }: { expenses: Expense[] }) {
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">No hay gastos registrados</TableCell>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No hay gastos registrados</TableCell>
               </TableRow>
             )}
             {filtered.map(e => {
@@ -126,6 +137,25 @@ export function ExpensesTable({ expenses }: { expenses: Expense[] }) {
                         <Input value={editState.total} onChange={ev => setEditState(s => s ? { ...s, total: ev.target.value } : s)} type="number" className="h-7 text-sm w-28 ml-auto" />
                       </TableCell>
                       <TableCell>
+                        <Select
+                          value={editState.paymentMethodId}
+                          onValueChange={v => setEditState(s => s ? { ...s, paymentMethodId: v ?? 'none' } : s)}
+                          items={[{ value: 'none', label: 'Sin especificar' }, ...paymentMethods.map(pm => ({ value: String(pm.id), label: pm.name }))]}
+                        >
+                          <SelectTrigger className="h-7 text-sm w-36">
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin especificar</SelectItem>
+                            {paymentMethods.map(pm => (
+                              <SelectItem key={pm.id} value={String(pm.id)}>
+                                {pm.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
                         <Input value={editState.date} onChange={ev => setEditState(s => s ? { ...s, date: ev.target.value } : s)} type="date" className="h-7 text-sm w-36" />
                       </TableCell>
                     </>
@@ -133,6 +163,7 @@ export function ExpensesTable({ expenses }: { expenses: Expense[] }) {
                     <>
                       <TableCell className="font-medium">{e.type}</TableCell>
                       <TableCell className="text-right">${Number(e.total).toLocaleString('es-AR')}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{e.paymentMethodName ?? 'Efectivo'}</TableCell>
                       <TableCell className="text-muted-foreground">{e.date ? new Date(e.date).toLocaleDateString('es-AR') : '—'}</TableCell>
                     </>
                   )}

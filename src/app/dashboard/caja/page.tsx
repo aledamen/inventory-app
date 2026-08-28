@@ -60,9 +60,6 @@ export default async function CajaPage() {
             href="/dashboard/products"
           />
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Los gastos aún no distinguen método de pago — se descuentan del efectivo en mano.
-        </p>
       </div>
 
       {/* Capital total */}

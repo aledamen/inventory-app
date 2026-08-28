@@ -59,8 +59,9 @@ export async function getCajaBalance() {
     }).from(stockMovements).leftJoin(paymentMethods, eq(stockMovements.paymentMethodId, paymentMethods.id)),
 
     db.select({
-      total: sql<string>`coalesce(sum(${expenses.total}), 0)`,
-    }).from(expenses),
+      banco: sql<string>`coalesce(sum(case when ${paymentMethods.name} in ${BANK_METHODS} then ${expenses.total} else 0 end), 0)`,
+      efectivo: sql<string>`coalesce(sum(case when ${paymentMethods.name} is null or ${paymentMethods.name} not in ${BANK_METHODS} then ${expenses.total} else 0 end), 0)`,
+    }).from(expenses).leftJoin(paymentMethods, eq(expenses.paymentMethodId, paymentMethods.id)),
 
     db.select({
       stock: products.stock,
@@ -78,18 +79,20 @@ export async function getCajaBalance() {
   const ventasEfectivo = Number(ventasRow[0]?.efectivo ?? 0)
   const stockBanco = Number(stockRow[0]?.banco ?? 0)
   const stockEfectivo = Number(stockRow[0]?.efectivo ?? 0)
-  const gastosTotal = Number(gastosRow[0]?.total ?? 0)
+  const gastosBanco = Number(gastosRow[0]?.banco ?? 0)
+  const gastosEfectivo = Number(gastosRow[0]?.efectivo ?? 0)
   const stockActualCosto = stockActualRows.reduce((acc, p) => acc + p.stock * Number(p.totalCost ?? 0), 0)
 
   const aportes = aportesBanco + aportesEfectivo
   const retiros = retirosBanco + retirosEfectivo
   const ventas = ventasBanco + ventasEfectivo
   const stockComprado = stockBanco + stockEfectivo
+  const gastosTotal = gastosBanco + gastosEfectivo
 
-  // Los gastos no tienen método de pago registrado en la base todavía — se descuentan del efectivo por defecto
+  // Los gastos se descuentan del bucket que corresponda a su método de pago (transferencia/mercadopago → banco, resto → efectivo)
   // Los traspasos son movimientos internos (efectivo <-> banco): no afectan el total, solo redistribuyen entre buckets
-  const cuentaBancaria = aportesBanco + ventasBanco - stockBanco - retirosBanco + traspasoABanco - traspasoAEfectivo
-  const efectivo = aportesEfectivo + ventasEfectivo - stockEfectivo - gastosTotal - retirosEfectivo - traspasoABanco + traspasoAEfectivo
+  const cuentaBancaria = aportesBanco + ventasBanco - stockBanco - gastosBanco - retirosBanco + traspasoABanco - traspasoAEfectivo
+  const efectivo = aportesEfectivo + ventasEfectivo - stockEfectivo - gastosEfectivo - retirosEfectivo - traspasoABanco + traspasoAEfectivo
 
   const efectivoLiquido = cuentaBancaria + efectivo
   // aporte sugerido: cuánto pusiste de tu bolsillo asumiendo $0 efectivo en mano

@@ -1,6 +1,7 @@
 import { pgTable, serial, text, integer, numeric, timestamp } from 'drizzle-orm/pg-core'
 import { products } from './products'
 import { paymentMethods } from './lookups'
+import { clients } from './crm'
 
 export const stockMovements = pgTable('stock_movements', {
   id: serial('id').primaryKey(),
@@ -24,7 +25,7 @@ export const sales = pgTable('sales', {
   saleNumber: integer('sale_number').notNull(),
   type: text('type').notNull().default('salida'),
   productId: integer('product_id').references(() => products.id).notNull(),
-  clientId: integer('client_id'),
+  clientId: integer('client_id').references(() => clients.id),
   totalCost: numeric('total_cost', { precision: 12, scale: 2 }),
   effectivePrice: numeric('effective_price', { precision: 12, scale: 2 }),
   quantity: integer('quantity').notNull(),
@@ -45,6 +46,7 @@ export const expenses = pgTable('expenses', {
   id: serial('id').primaryKey(),
   type: text('type').notNull(),
   total: numeric('total', { precision: 12, scale: 2 }).notNull(),
+  paymentMethodId: integer('payment_method_id').references(() => paymentMethods.id),
   date: timestamp('date').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 })

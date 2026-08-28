@@ -71,6 +71,7 @@ export async function getProducts() {
       cost: products.cost,
       stock: products.stock,
       stockMin: products.stockMin,
+      contactAfterDays: products.contactAfterDays,
       imageUrl: products.imageUrl,
       visible: products.visible,
       notes: products.notes,
@@ -117,6 +118,7 @@ export async function createProduct(data: {
   weightG?: number
   size?: string
   stockMin?: number
+  contactAfterDays?: number | null
   type?: string
   bagAssigned?: string
   notes?: string
@@ -145,6 +147,7 @@ export async function updateProduct(id: number, data: Partial<{
   weightG: number
   size: string
   stockMin: number
+  contactAfterDays: number | null
   type: string
   bagAssigned: string
   notes: string

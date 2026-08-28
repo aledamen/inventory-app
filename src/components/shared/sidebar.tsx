@@ -30,6 +30,7 @@ import {
   Star,
   Share2,
   BarChart2,
+  MessageCircle,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -52,6 +53,7 @@ const navItems = [
   ]},
   { group: 'CRM', items: [
     { href: '/dashboard/clients', label: 'Clientes', icon: Users },
+    { href: '/dashboard/recontacto', label: 'Recontacto', icon: MessageCircle },
     { href: '/dashboard/suppliers', label: 'Proveedores', icon: Truck },
   ]},
   { group: 'Marketing', items: [

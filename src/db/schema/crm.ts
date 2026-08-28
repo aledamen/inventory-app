@@ -1,6 +1,7 @@
-import { pgTable, serial, text, integer, numeric, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, integer, numeric, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
 import { products } from './products'
 import { paymentMethods } from './lookups'
+import { sales } from './movements'
 
 export const clients = pgTable('clients', {
   id: serial('id').primaryKey(),
@@ -79,6 +80,17 @@ export const orderItems = pgTable('order_items', {
   quantity: integer('quantity').notNull(),
   unitPrice: numeric('unit_price', { precision: 12, scale: 2 }),
 })
+
+export const recontactActions = pgTable('recontact_actions', {
+  id: serial('id').primaryKey(),
+  saleId: integer('sale_id').references(() => sales.id).notNull(),
+  clientId: integer('client_id').references(() => clients.id).notNull(),
+  productId: integer('product_id').references(() => products.id).notNull(),
+  status: text('status').notNull().default('pendiente'),
+  contactedAt: timestamp('contacted_at'),
+  notes: text('notes'),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (t) => [uniqueIndex('recontact_actions_sale_uq').on(t.saleId)])
 
 export const salesTargets = pgTable('sales_targets', {
   id: serial('id').primaryKey(),

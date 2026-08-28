@@ -22,6 +22,20 @@
       "when": 1783001615587,
       "tag": "0002_panoramic_rhodey",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787786557397,
+      "tag": "0003_lazy_the_anarchist",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787875172816,
+      "tag": "0004_spicy_toro",
+      "breakpoints": true
     }
   ]
 }

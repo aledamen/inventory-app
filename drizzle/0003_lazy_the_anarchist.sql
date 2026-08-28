@@ -1,0 +1,2 @@
+ALTER TABLE "expenses" ADD COLUMN "payment_method_id" integer;--> statement-breakpoint
+ALTER TABLE "expenses" ADD CONSTRAINT "expenses_payment_method_id_payment_methods_id_fk" FOREIGN KEY ("payment_method_id") REFERENCES "public"."payment_methods"("id") ON DELETE no action ON UPDATE no action;

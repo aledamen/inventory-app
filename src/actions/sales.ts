@@ -40,11 +40,12 @@ export async function createMultiSale(data: {
   paymentMethodId?: number
   notes?: string
   date: Date
-  clientId?: number
+  clientId: number
   couponId?: number
   discountApplied?: number
 }) {
   if (data.items.length === 0) throw new Error('La venta debe tener al menos un producto')
+  if (!data.clientId) throw new Error('La venta debe tener un cliente')
 
   const lastNum = await db
     .select({ max: sql<number>`max(${sales.saleNumber})` })
@@ -88,7 +89,7 @@ export async function createMultiSale(data: {
         totalCost: String(row.totalCost),
         netProfit: String(row.netProfit),
         grossProfit: String(row.saleValue),
-        clientId: data.clientId ?? null,
+        clientId: data.clientId,
         paymentMethodId: data.paymentMethodId,
         couponId: data.couponId ?? null,
         discountApplied: data.discountApplied != null ? String(data.discountApplied) : null,
@@ -113,8 +114,10 @@ export async function createSale(data: {
   paymentMethodId?: number
   notes?: string
   date: Date
-  clientId?: number
+  clientId: number
 }) {
+  if (!data.clientId) throw new Error('La venta debe tener un cliente')
+
   const product = await db
     .select({ stock: products.stock, cost: pricing.totalCost })
     .from(products)
@@ -146,7 +149,7 @@ export async function createSale(data: {
     totalCost: String(totalCost),
     netProfit: String(netProfit),
     grossProfit: String(saleValue),
-    clientId: data.clientId ?? null,
+    clientId: data.clientId,
     paymentMethodId: data.paymentMethodId,
     notes: data.notes,
     date: data.date,
@@ -254,27 +257,29 @@ export async function updateSale(id: number, data: {
 }
 
 export async function deleteSale(id: number) {
-  const existing = await db.select().from(sales).where(eq(sales.id, id)).limit(1)
-  if (!existing[0]) throw new Error('Venta no encontrada')
-  const { saleNumber, productId, quantity } = existing[0]
+  await db.transaction(async (tx) => {
+    const existing = await tx.select().from(sales).where(eq(sales.id, id)).limit(1)
+    if (!existing[0]) throw new Error('Venta no encontrada')
+    const { saleNumber, productId, quantity } = existing[0]
 
-  await db.update(products)
-    .set({ stock: sql`${products.stock} + ${quantity}`, updatedAt: new Date() })
-    .where(eq(products.id, productId))
-  await db.delete(sales).where(eq(sales.id, id))
+    await tx.update(products)
+      .set({ stock: sql`${products.stock} + ${quantity}`, updatedAt: new Date() })
+      .where(eq(products.id, productId))
+    await tx.delete(sales).where(eq(sales.id, id))
 
-  // Recalculate totalSale for remaining rows in the group
-  const [groupTotal] = await db
-    .select({ total: sql<string>`sum(${sales.saleValue})` })
-    .from(sales)
-    .where(eq(sales.saleNumber, saleNumber))
-
-  if (groupTotal?.total) {
-    await db
-      .update(sales)
-      .set({ totalSale: groupTotal.total })
+    // Recalculate totalSale for remaining rows in the group
+    const [groupTotal] = await tx
+      .select({ total: sql<string>`sum(${sales.saleValue})` })
+      .from(sales)
       .where(eq(sales.saleNumber, saleNumber))
-  }
+
+    if (groupTotal?.total) {
+      await tx
+        .update(sales)
+        .set({ totalSale: groupTotal.total })
+        .where(eq(sales.saleNumber, saleNumber))
+    }
+  })
 
   revalidatePath('/dashboard', 'layout')
   await revalidateCatalog()

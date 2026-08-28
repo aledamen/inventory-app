@@ -59,6 +59,7 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
       flavorId: flavorId ? Number(flavorId) : undefined,
       weightG: fd.get('weightG') ? Number(fd.get('weightG')) : undefined,
       stockMin: fd.get('stockMin') ? Number(fd.get('stockMin')) : undefined,
+      contactAfterDays: fd.get('contactAfterDays') ? Number(fd.get('contactAfterDays')) : null,
       type: fd.get('type') as string || 'estandar',
       notes: fd.get('notes') as string || undefined,
       size: fd.get('size') as string || undefined,
@@ -289,6 +290,12 @@ export function ProductFormDialog({ lookups, product, mode = 'create' }: Props) 
               <Label htmlFor="type">Tipo</Label>
               <Input id="type" name="type" defaultValue={product?.type ?? 'estandar'} />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="contactAfterDays">Recontacto (días)</Label>
+            <Input id="contactAfterDays" name="contactAfterDays" type="number" min="0" placeholder="Vacío = nunca recordar" defaultValue={product?.contactAfterDays ?? ''} />
+            <p className="text-xs text-muted-foreground">Días después de la venta para recordar contactar al cliente. Vacío o 0 = nunca.</p>
           </div>
 
           <div className="space-y-1.5">

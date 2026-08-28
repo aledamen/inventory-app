@@ -15,6 +15,7 @@ export const products = pgTable('products', {
   bagAssigned: text('bag_assigned'),
   stock: integer('stock').default(0).notNull(),
   stockMin: integer('stock_min').default(0),
+  contactAfterDays: integer('contact_after_days'),
   imageUrl: text('image_url'),
   visible: boolean('visible').default(false),
   notes: text('notes'),

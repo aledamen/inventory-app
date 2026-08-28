@@ -8,6 +8,7 @@ export type ProductWithRelations = {
   cost: string
   stock: number
   stockMin: number | null
+  contactAfterDays: number | null
   imageUrl: string | null
   visible: boolean | null
   notes: string | null

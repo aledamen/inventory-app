@@ -1,9 +1,13 @@
 import { getExpenses } from '@/actions/expenses'
+import { getAllLookups } from '@/actions/lookups'
 import { ExpensesTable } from '@/components/expenses/expenses-table'
 import { ExpenseFormDialog } from '@/components/expenses/expense-form-dialog'
 
 export default async function ExpensesPage() {
-  const data = await getExpenses()
+  const [data, lookups] = await Promise.all([
+    getExpenses(),
+    getAllLookups(),
+  ])
   const total = data.reduce((acc, e) => acc + Number(e.total), 0)
 
   return (
@@ -15,9 +19,9 @@ export default async function ExpensesPage() {
             Total acumulado: <strong className="text-foreground">${total.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</strong>
           </p>
         </div>
-        <ExpenseFormDialog />
+        <ExpenseFormDialog paymentMethods={lookups.paymentMethods} />
       </div>
-      <ExpensesTable expenses={data} />
+      <ExpensesTable expenses={data} paymentMethods={lookups.paymentMethods} />
     </div>
   )
 }
