@@ -101,8 +101,8 @@ function CuratedPickFormDialog({
           </div>
           <div className="space-y-1.5">
             <Label>Combo *</Label>
-            <Select value={comboSku} onValueChange={v => setComboSku(v ?? '')}>
-              <SelectTrigger><SelectValue placeholder="Elegí un combo" /></SelectTrigger>
+            <Select value={comboSku} onValueChange={v => setComboSku(v ?? '')} items={combos.map(c => ({ value: c.sku, label: `${c.name} (${c.sku})` }))}>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Elegí un combo" /></SelectTrigger>
               <SelectContent>
                 {combos.map(c => (
                   <SelectItem key={c.sku} value={c.sku}>{c.name} ({c.sku})</SelectItem>
