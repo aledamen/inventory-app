@@ -31,6 +31,7 @@ import {
   Share2,
   BarChart2,
   MessageCircle,
+  Sparkles,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -64,6 +65,7 @@ const navItems = [
   ]},
   { group: 'Catálogo', items: [
     { href: '/dashboard/cms', label: 'CMS', icon: Store },
+    { href: '/dashboard/curated-picks', label: 'Empezá por acá', icon: Sparkles },
     { href: '/dashboard/visitors', label: 'Visitantes', icon: Eye },
   ]},
   { group: 'Finanzas', items: [

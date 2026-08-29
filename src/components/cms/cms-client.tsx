@@ -821,7 +821,6 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
   const [headerTextColor, setHeaderTextColor] = useState(config.header_text_color ?? '#0A0A0A')
   const [navCatalogoLabel, setNavCatalogoLabel] = useState(config.nav_catalogo_label ?? 'Catálogo')
   const [navCarritoLabel, setNavCarritoLabel] = useState(config.nav_carrito_label ?? 'Carrito')
-  const [navCheckoutLabel, setNavCheckoutLabel] = useState(config.nav_checkout_label ?? 'Checkout')
   const [stockUrgencyEnabled, setStockUrgencyEnabled] = useState(config.stock_urgency_enabled === 'true')
   const [stockUrgencyThreshold, setStockUrgencyThreshold] = useState(config.stock_urgency_threshold ?? '5')
   const [featuredEnabled, setFeaturedEnabled] = useState(config.featured_section_enabled === 'true')
@@ -849,7 +848,6 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
         header_text_color: headerTextColor,
         nav_catalogo_label: navCatalogoLabel,
         nav_carrito_label: navCarritoLabel,
-        nav_checkout_label: navCheckoutLabel,
         stock_urgency_enabled: stockUrgencyEnabled ? 'true' : 'false',
         stock_urgency_threshold: stockUrgencyThreshold,
         featured_section_enabled: featuredEnabled ? 'true' : 'false',
@@ -973,18 +971,14 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Sección 1</Label>
               <Input value={navCatalogoLabel} onChange={e => setNavCatalogoLabel(e.target.value)} placeholder="Catálogo" />
             </div>
             <div className="space-y-1.5">
-              <Label>Sección 2</Label>
+              <Label>Texto botón carrito</Label>
               <Input value={navCarritoLabel} onChange={e => setNavCarritoLabel(e.target.value)} placeholder="Carrito" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Sección 3</Label>
-              <Input value={navCheckoutLabel} onChange={e => setNavCheckoutLabel(e.target.value)} placeholder="Checkout" />
             </div>
           </div>
           <div
@@ -995,7 +989,6 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
             <div className="flex gap-4">
               <span>{navCatalogoLabel}</span>
               <span>{navCarritoLabel}</span>
-              <span>{navCheckoutLabel}</span>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { siteConfig } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { triggerCatalogRevalidate } from '@/lib/revalidate-catalog'
 
 const DEFAULTS: Record<string, string> = {
   store_name: 'Fase-Beta',
@@ -22,7 +23,6 @@ const DEFAULTS: Record<string, string> = {
   header_text_color: '#0A0A0A',
   nav_catalogo_label: 'Catálogo',
   nav_carrito_label: 'Carrito',
-  nav_checkout_label: 'Checkout',
   logo_url: '',
   logo_width: '340',
   stock_urgency_enabled: 'false',
@@ -59,12 +59,5 @@ export async function setSiteConfigBulk(data: Record<string, string>) {
   revalidatePath('/dashboard/cms')
   revalidatePath('/api/site-config')
 
-  const catalogUrl = process.env.CATALOG_APP_URL
-  const secret = process.env.REVALIDATE_SECRET
-  if (catalogUrl && secret) {
-    fetch(`${catalogUrl}/api/revalidate`, {
-      method: 'POST',
-      headers: { 'x-revalidate-secret': secret },
-    }).catch(() => null)
-  }
+  await triggerCatalogRevalidate()
 }
