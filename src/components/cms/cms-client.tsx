@@ -825,6 +825,8 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
   const [stockUrgencyThreshold, setStockUrgencyThreshold] = useState(config.stock_urgency_threshold ?? '5')
   const [featuredEnabled, setFeaturedEnabled] = useState(config.featured_section_enabled === 'true')
   const [featuredTitle, setFeaturedTitle] = useState(config.featured_section_title ?? 'Destacados')
+  const [curatedPicksTitle, setCuratedPicksTitle] = useState(config.curated_picks_title ?? 'Empezá por acá')
+  const [curatedPicksSubtitle, setCuratedPicksSubtitle] = useState(config.curated_picks_subtitle ?? 'Combos armados para arrancar sin vueltas.')
 
   async function handleSave() {
     setLoading(true)
@@ -852,6 +854,8 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
         stock_urgency_threshold: stockUrgencyThreshold,
         featured_section_enabled: featuredEnabled ? 'true' : 'false',
         featured_section_title: featuredTitle,
+        curated_picks_title: curatedPicksTitle,
+        curated_picks_subtitle: curatedPicksSubtitle,
       })
       toast.success('Configuración guardada')
       router.refresh()
@@ -1155,6 +1159,31 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
               onChange={e => setFeaturedTitle(e.target.value)}
               disabled={!featuredEnabled}
               placeholder="Destacados"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sección &quot;Empezá por acá&quot;</h3>
+        <div className="space-y-3 bg-card rounded-xl border border-border p-4">
+          <p className="text-xs text-muted-foreground">Las cards de esa sección se gestionan desde &quot;Empezá por acá&quot; en el menú lateral — acá solo se edita el título y la bajada.</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="curated-picks-title">Título de la sección</Label>
+            <Input
+              id="curated-picks-title"
+              value={curatedPicksTitle}
+              onChange={e => setCuratedPicksTitle(e.target.value)}
+              placeholder="Empezá por acá"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="curated-picks-subtitle">Bajada</Label>
+            <Input
+              id="curated-picks-subtitle"
+              value={curatedPicksSubtitle}
+              onChange={e => setCuratedPicksSubtitle(e.target.value)}
+              placeholder="Combos armados para arrancar sin vueltas."
             />
           </div>
         </div>

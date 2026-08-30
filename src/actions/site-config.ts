@@ -29,6 +29,8 @@ const DEFAULTS: Record<string, string> = {
   stock_urgency_threshold: '5',
   featured_section_enabled: 'false',
   featured_section_title: 'Destacados',
+  curated_picks_title: 'Empezá por acá',
+  curated_picks_subtitle: 'Combos armados para arrancar sin vueltas.',
 }
 
 export async function getSiteConfig(): Promise<Record<string, string>> {
