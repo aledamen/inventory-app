@@ -825,6 +825,7 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
   const [stockUrgencyThreshold, setStockUrgencyThreshold] = useState(config.stock_urgency_threshold ?? '5')
   const [featuredEnabled, setFeaturedEnabled] = useState(config.featured_section_enabled === 'true')
   const [featuredTitle, setFeaturedTitle] = useState(config.featured_section_title ?? 'Destacados')
+  const [curatedPicksEyebrow, setCuratedPicksEyebrow] = useState(config.curated_picks_eyebrow ?? 'Si no sabés qué comprar')
   const [curatedPicksTitle, setCuratedPicksTitle] = useState(config.curated_picks_title ?? 'Empezá por acá')
   const [curatedPicksSubtitle, setCuratedPicksSubtitle] = useState(config.curated_picks_subtitle ?? 'Combos armados para arrancar sin vueltas.')
 
@@ -854,6 +855,7 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
         stock_urgency_threshold: stockUrgencyThreshold,
         featured_section_enabled: featuredEnabled ? 'true' : 'false',
         featured_section_title: featuredTitle,
+        curated_picks_eyebrow: curatedPicksEyebrow,
         curated_picks_title: curatedPicksTitle,
         curated_picks_subtitle: curatedPicksSubtitle,
       })
@@ -1167,7 +1169,16 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sección &quot;Empezá por acá&quot;</h3>
         <div className="space-y-3 bg-card rounded-xl border border-border p-4">
-          <p className="text-xs text-muted-foreground">Las cards de esa sección se gestionan desde &quot;Empezá por acá&quot; en el menú lateral — acá solo se edita el título y la bajada.</p>
+          <p className="text-xs text-muted-foreground">Las cards de esa sección se gestionan desde &quot;Empezá por acá&quot; en el menú lateral — acá solo se edita el texto de encabezado.</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="curated-picks-eyebrow">Texto pequeño de arriba</Label>
+            <Input
+              id="curated-picks-eyebrow"
+              value={curatedPicksEyebrow}
+              onChange={e => setCuratedPicksEyebrow(e.target.value)}
+              placeholder="Si no sabés qué comprar"
+            />
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="curated-picks-title">Título de la sección</Label>
             <Input
