@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, numeric, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, serial, text, integer, numeric, timestamp, boolean } from 'drizzle-orm/pg-core'
 import { products } from './products'
 import { paymentMethods } from './lookups'
 import { clients } from './crm'
@@ -36,6 +36,7 @@ export const sales = pgTable('sales', {
   grossProfit: numeric('gross_profit', { precision: 12, scale: 2 }),
   couponId: integer('coupon_id'),
   discountApplied: numeric('discount_applied', { precision: 12, scale: 2 }),
+  paid: boolean('paid').notNull().default(true),
   notes: text('notes'),
   date: timestamp('date').notNull(),
   createdAt: timestamp('created_at').defaultNow(),

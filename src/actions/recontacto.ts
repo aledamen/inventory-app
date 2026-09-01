@@ -10,6 +10,7 @@ type RawRow = {
   client_id: number
   product_id: number
   sale_id: number
+  sale_number: number
   last_sale_date: string
   sale_value: string | null
   contact_after_days: number
@@ -26,6 +27,7 @@ export type RecontactRow = {
   clientId: number
   productId: number
   saleId: number
+  saleNumber: number
   clientName: string
   clientPhone: string | null
   productName: string
@@ -52,29 +54,32 @@ export type RecontactKpis = {
 export async function getRecontactData(): Promise<{ rows: RecontactRow[]; kpis: RecontactKpis }> {
   const result = await db.execute<RawRow>(sql`
     WITH latest AS (
-      SELECT DISTINCT ON (s.client_id, s.product_id)
-        s.client_id AS client_id, s.product_id AS product_id, s.id AS sale_id, s.date AS last_sale_date, s.sale_value AS sale_value,
+      SELECT DISTINCT ON (s.client_id, p.name)
+        s.client_id AS client_id, s.product_id AS product_id, s.id AS sale_id, s.sale_number AS sale_number,
+        s.date AS last_sale_date, s.sale_value AS sale_value,
         p.contact_after_days AS contact_after_days, p.name AS product_name
       FROM sales s
       JOIN products p ON p.id = s.product_id
       WHERE s.client_id IS NOT NULL
         AND p.contact_after_days IS NOT NULL AND p.contact_after_days > 0
-      ORDER BY s.client_id, s.product_id, s.date DESC, s.id DESC
+      ORDER BY s.client_id, p.name, s.date DESC, s.id DESC
     )
-    SELECT l.client_id, l.product_id, l.sale_id, l.last_sale_date, l.sale_value, l.contact_after_days, l.product_name,
+    SELECT l.client_id, l.product_id, l.sale_id, l.sale_number, l.last_sale_date, l.sale_value, l.contact_after_days, l.product_name,
            c.name AS client_name, c.phone AS client_phone,
            coalesce(ra.status, 'pendiente') AS status, ra.contacted_at AS contacted_at,
            coalesce(
              ra.notes,
              (SELECT ra2.notes FROM recontact_actions ra2
                 JOIN sales s2 ON s2.id = ra2.sale_id
-               WHERE s2.client_id = l.client_id AND s2.product_id = l.product_id
+                JOIN products p2 ON p2.id = s2.product_id
+               WHERE s2.client_id = l.client_id AND p2.name = l.product_name
                  AND ra2.notes IS NOT NULL
                ORDER BY s2.date DESC, s2.id DESC
                LIMIT 1)
            ) AS notes,
            (SELECT count(*) FROM sales s2
-              WHERE s2.client_id = l.client_id AND s2.product_id = l.product_id
+              JOIN products p2 ON p2.id = s2.product_id
+              WHERE s2.client_id = l.client_id AND p2.name = l.product_name
                 AND s2.client_id IS NOT NULL) AS purchase_count
     FROM latest l
     JOIN clients c ON c.id = l.client_id
@@ -95,6 +100,7 @@ export async function getRecontactData(): Promise<{ rows: RecontactRow[]; kpis: 
       clientId: r.client_id,
       productId: r.product_id,
       saleId: r.sale_id,
+      saleNumber: r.sale_number,
       clientName: r.client_name,
       clientPhone: r.client_phone,
       productName: r.product_name,
@@ -226,9 +232,9 @@ export async function getRecontactHistory({ page, pageSize }: { page: number; pa
         AND p.contact_after_days IS NOT NULL AND p.contact_after_days > 0
     ),
     latest_ids AS (
-      SELECT DISTINCT ON (client_id, product_id) sale_id
+      SELECT DISTINCT ON (client_id, product_name) sale_id
       FROM eligible
-      ORDER BY client_id, product_id, sale_date DESC, sale_id DESC
+      ORDER BY client_id, product_name, sale_date DESC, sale_id DESC
     )
     SELECT e.sale_id, e.sale_date, e.sale_value, e.client_name, e.product_name,
            coalesce(ra.status, 'pendiente') AS status, ra.contacted_at AS contacted_at, ra.notes AS notes,

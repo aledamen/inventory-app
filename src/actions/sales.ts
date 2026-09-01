@@ -23,6 +23,7 @@ export async function getSales() {
       netProfit: sales.netProfit,
       paymentMethodId: sales.paymentMethodId,
       paymentMethod: paymentMethods.name,
+      paid: sales.paid,
       notes: sales.notes,
       clientId: sales.clientId,
       clientName: clients.name,
@@ -33,6 +34,44 @@ export async function getSales() {
     .leftJoin(paymentMethods, eq(sales.paymentMethodId, paymentMethods.id))
     .leftJoin(clients, eq(sales.clientId, clients.id))
     .orderBy(desc(sales.date), desc(sales.saleNumber))
+}
+
+export async function getSaleById(id: number) {
+  const [row] = await db
+    .select({
+      id: sales.id,
+      saleNumber: sales.saleNumber,
+      date: sales.date,
+      productId: sales.productId,
+      productSku: products.sku,
+      productName: products.name,
+      productFlavor: flavors.name,
+      quantity: sales.quantity,
+      effectivePrice: sales.effectivePrice,
+      saleValue: sales.saleValue,
+      totalSale: sales.totalSale,
+      netProfit: sales.netProfit,
+      paymentMethodId: sales.paymentMethodId,
+      paymentMethod: paymentMethods.name,
+      paid: sales.paid,
+      notes: sales.notes,
+      clientId: sales.clientId,
+      clientName: clients.name,
+    })
+    .from(sales)
+    .leftJoin(products, eq(sales.productId, products.id))
+    .leftJoin(flavors, eq(products.flavorId, flavors.id))
+    .leftJoin(paymentMethods, eq(sales.paymentMethodId, paymentMethods.id))
+    .leftJoin(clients, eq(sales.clientId, clients.id))
+    .where(eq(sales.id, id))
+    .limit(1)
+
+  return row ?? null
+}
+
+export async function toggleSalePaid(id: number, paid: boolean) {
+  await db.update(sales).set({ paid, updatedAt: new Date() }).where(eq(sales.id, id))
+  revalidatePath('/dashboard/sales')
 }
 
 export async function createMultiSale(data: {

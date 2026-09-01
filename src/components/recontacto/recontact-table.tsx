@@ -12,8 +12,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { markContactado, markNoQuiere, reopenPair, updateNotes } from '@/actions/recontacto'
+import { getSaleById } from '@/actions/sales'
+import { SaleDetailSheet } from '@/components/sales/sale-detail-sheet'
 import type { RecontactRow } from '@/actions/recontacto'
 import type { CascadeResult } from '@/lib/recontact-cascade'
+import type { SaleWithProduct } from '@/types'
 import { Check, X, Pencil, MessageCircle, RotateCcw, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -68,6 +71,7 @@ export function RecontactTable({ rows }: { rows: RecontactRow[] }) {
   const [loadingKey, setLoadingKey] = useState<string | null>(null)
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const [notesDraft, setNotesDraft] = useState('')
+  const [selectedSale, setSelectedSale] = useState<SaleWithProduct | null>(null)
 
   function handleSort(field: SortField) {
     if (field === sortField) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -142,6 +146,19 @@ export function RecontactTable({ rows }: { rows: RecontactRow[] }) {
     }
   }
 
+  async function handleViewSale(saleId: number) {
+    try {
+      const sale = await getSaleById(saleId)
+      if (!sale) {
+        toast.error('No se encontró la venta')
+        return
+      }
+      setSelectedSale(sale)
+    } catch {
+      toast.error('Error al cargar la venta')
+    }
+  }
+
   function startEditNotes(r: RecontactRow) {
     setEditingKey(key(r))
     setNotesDraft(r.notes ?? '')
@@ -188,6 +205,7 @@ export function RecontactTable({ rows }: { rows: RecontactRow[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Cliente</TableHead>
+              <TableHead className="w-20">Venta</TableHead>
               <SortHead field="productName" sortField={sortField} sortDir={sortDir} onSort={handleSort}>Producto</SortHead>
               <SortHead field="lastSaleDate" sortField={sortField} sortDir={sortDir} onSort={handleSort}>Última venta</SortHead>
               <SortHead field="dueDate" sortField={sortField} sortDir={sortDir} onSort={handleSort}>Vence</SortHead>
@@ -199,7 +217,7 @@ export function RecontactTable({ rows }: { rows: RecontactRow[] }) {
           <TableBody>
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Sin recontactos pendientes</TableCell>
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Sin recontactos pendientes</TableCell>
               </TableRow>
             )}
             {filtered.map(r => {
@@ -211,6 +229,15 @@ export function RecontactTable({ rows }: { rows: RecontactRow[] }) {
                   <TableCell className="font-medium">
                     <div>{r.clientName}</div>
                     {r.clientPhone && <div className="text-xs text-muted-foreground">{r.clientPhone}</div>}
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-primary underline underline-offset-2"
+                      onClick={() => handleViewSale(r.saleId)}
+                    >
+                      #{r.saleNumber}
+                    </button>
                   </TableCell>
                   <TableCell className="text-sm">
                     {r.productName}
@@ -294,6 +321,8 @@ export function RecontactTable({ rows }: { rows: RecontactRow[] }) {
           </TableBody>
         </Table>
       </div>
+
+      <SaleDetailSheet sale={selectedSale} onOpenChange={(o) => { if (!o) setSelectedSale(null) }} />
     </div>
   )
 }

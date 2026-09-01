@@ -61,6 +61,7 @@ export type SaleWithProduct = {
   netProfit: string | null
   paymentMethodId: number | null
   paymentMethod: string | null
+  paid: boolean
   notes: string | null
   clientId: number | null
   clientName: string | null

@@ -9,14 +9,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SaleEditDialog } from './sale-edit-dialog'
-import { deleteSale } from '@/actions/sales'
+import { SaleDetailSheet } from './sale-detail-sheet'
+import { deleteSale, toggleSalePaid } from '@/actions/sales'
 import type { ProductWithRelations, SaleWithProduct } from '@/types'
 import { Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from '@/components/ui/sheet'
 
 type SortField = 'saleNumber' | 'date' | 'productName' | 'quantity' | 'effectivePrice' | 'totalSale' | 'netProfit' | 'paymentMethod'
 
@@ -98,6 +96,15 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
     }
   }
 
+  async function handleTogglePaid(id: number, paid: boolean) {
+    try {
+      await toggleSalePaid(id, paid)
+      router.refresh()
+    } catch {
+      toast.error('Error al actualizar el estado de pago')
+    }
+  }
+
   function SortHead({ field, children, className }: { field: SortField; children: React.ReactNode; className?: string }) {
     const active = sortField === field
     return (
@@ -137,13 +144,14 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
                 <SortHead field="totalSale" className="text-right">Total</SortHead>
                 <SortHead field="netProfit" className="text-right">Ganancia neta</SortHead>
                 <SortHead field="paymentMethod">Método pago</SortHead>
+                <TableHead>Pagado</TableHead>
                 <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                     No hay ventas
                   </TableCell>
                 </TableRow>
@@ -185,6 +193,18 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
                         </TableCell>
                         <TableCell>{i === 0 ? (s.paymentMethod ?? '—') : ''}</TableCell>
                         <TableCell onClick={e => e.stopPropagation()}>
+                          {i === 0 && (
+                            <button type="button" onClick={() => handleTogglePaid(s.id, !s.paid)}>
+                              <Badge
+                                variant={s.paid ? 'secondary' : 'destructive'}
+                                className={cn('cursor-pointer', s.paid && 'text-green-700')}
+                              >
+                                {s.paid ? 'Pagado' : 'Pendiente'}
+                              </Badge>
+                            </button>
+                          )}
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()}>
                           <div className="flex gap-1">
                             <SaleEditDialog sale={s} products={products} lookups={lookups} clients={clients} />
                             <Button
@@ -213,7 +233,7 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
                         <TableCell className="text-right font-semibold tabular-nums text-green-700 py-1.5">
                           ${groupProfit.toLocaleString('es-AR')}
                         </TableCell>
-                        <TableCell colSpan={2} />
+                        <TableCell colSpan={3} />
                       </TableRow>
                     )}
                   </Fragment>
@@ -234,7 +254,7 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
                     <TableCell />
                     <TableCell className="text-right tabular-nums">${totalRev.toLocaleString('es-AR')}</TableCell>
                     <TableCell className="text-right tabular-nums text-green-700">${totalProfit.toLocaleString('es-AR')}</TableCell>
-                    <TableCell colSpan={2} />
+                    <TableCell colSpan={3} />
                   </TableRow>
                 )
               })()}
@@ -243,68 +263,7 @@ export function SalesTable({ sales, products, lookups, clients = [] }: Props) {
         </div>
       </div>
 
-      <Sheet open={selected !== null} onOpenChange={(o) => { if (!o) setSelected(null) }}>
-        <SheetContent className="sm:max-w-md flex flex-col gap-0 p-0">
-          {selected && (
-            <>
-              <SheetHeader className="p-6 pb-4 border-b">
-                <SheetTitle>Venta #{selected.saleNumber}</SheetTitle>
-                <SheetDescription>{new Date(selected.date).toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</SheetDescription>
-              </SheetHeader>
-              <div className="flex-1 overflow-y-auto p-6 space-y-5">
-                <div>
-                  <p className="text-xs text-muted-foreground">Producto</p>
-                  <p className="text-sm font-medium mt-0.5">
-                    {selected.productName}
-                    {selected.productFlavor && <span className="text-muted-foreground"> · {selected.productFlavor}</span>}
-                  </p>
-                  {selected.productSku && <p className="text-xs text-muted-foreground font-mono mt-0.5">{selected.productSku}</p>}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Cantidad</p>
-                    <p className="text-sm font-medium mt-0.5">{selected.quantity}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Precio unitario</p>
-                    <p className="text-sm font-medium mt-0.5">
-                      {selected.effectivePrice ? `$${Number(selected.effectivePrice).toLocaleString('es-AR')}` : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Subtotal</p>
-                    <p className="text-sm font-semibold mt-0.5">
-                      {selected.saleValue ? `$${Number(selected.saleValue).toLocaleString('es-AR')}` : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Ganancia neta</p>
-                    <p className={`text-sm font-medium mt-0.5 ${Number(selected.netProfit ?? 0) >= 0 ? 'text-green-700' : 'text-destructive'}`}>
-                      {selected.netProfit ? `$${Number(selected.netProfit).toLocaleString('es-AR')}` : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Método de pago</p>
-                    <p className="text-sm font-medium mt-0.5">{selected.paymentMethod ?? '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Cliente</p>
-                    <p className="text-sm font-medium mt-0.5">{selected.clientName ?? '—'}</p>
-                  </div>
-                </div>
-
-                {selected.notes && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Notas</p>
-                    <p className="text-sm">{selected.notes}</p>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      <SaleDetailSheet sale={selected} onOpenChange={(o) => { if (!o) setSelected(null) }} />
     </>
   )
 }

@@ -141,6 +141,7 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
             <div className="space-y-1.5">
               <Label>Cliente</Label>
               <Combobox
+                items={clients.map(c => c.name)}
                 value={selectedClientName}
                 onValueChange={v => handleClientChange(v as string | null)}
               >
