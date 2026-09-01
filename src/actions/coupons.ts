@@ -154,27 +154,35 @@ export type ValidateCouponResult =
   | { valid: true; couponId: number; discountType: string; discountValue: number; discountAmount: number; finalAmount: number; influencerName: string | null; influencerHandle: string | null }
   | { valid: false; error: string }
 
-export async function validateCoupon(code: string, amount: number): Promise<ValidateCouponResult> {
-  const [coupon] = await db
-    .select({
-      id: coupons.id,
-      code: coupons.code,
-      active: coupons.active,
-      validFrom: coupons.validFrom,
-      validTo: coupons.validTo,
-      maxUses: coupons.maxUses,
-      usesCount: coupons.usesCount,
-      minOrderAmount: coupons.minOrderAmount,
-      discountType: coupons.discountType,
-      discountValue: coupons.discountValue,
-      influencerName: influencers.name,
-      influencerHandle: influencers.socialUsername,
-    })
-    .from(coupons)
-    .leftJoin(influencers, eq(coupons.influencerId, influencers.id))
-    .where(eq(coupons.code, code.toUpperCase().trim()))
-    .limit(1)
+type CouponEligibilityRow = {
+  id: number
+  active: boolean
+  validFrom: Date | null
+  validTo: Date | null
+  maxUses: number | null
+  usesCount: number
+  minOrderAmount: string | null
+  discountType: string
+  discountValue: string
+  influencerName: string | null
+  influencerHandle: string | null
+} | undefined
 
+const couponEligibilitySelect = {
+  id: coupons.id,
+  active: coupons.active,
+  validFrom: coupons.validFrom,
+  validTo: coupons.validTo,
+  maxUses: coupons.maxUses,
+  usesCount: coupons.usesCount,
+  minOrderAmount: coupons.minOrderAmount,
+  discountType: coupons.discountType,
+  discountValue: coupons.discountValue,
+  influencerName: influencers.name,
+  influencerHandle: influencers.socialUsername,
+}
+
+function evaluateCouponEligibility(coupon: CouponEligibilityRow, amount: number): ValidateCouponResult {
   if (!coupon) return { valid: false, error: 'Cupón no encontrado' }
   if (!coupon.active) return { valid: false, error: 'Cupón inactivo' }
 
@@ -203,23 +211,44 @@ export async function validateCoupon(code: string, amount: number): Promise<Vali
   }
 }
 
+export async function validateCoupon(code: string, amount: number): Promise<ValidateCouponResult> {
+  const [coupon] = await db
+    .select(couponEligibilitySelect)
+    .from(coupons)
+    .leftJoin(influencers, eq(coupons.influencerId, influencers.id))
+    .where(eq(coupons.code, code.toUpperCase().trim()))
+    .limit(1)
+
+  return evaluateCouponEligibility(coupon, amount)
+}
+
 export async function recordCouponUse(data: {
   couponId: number
   saleId?: number
   source: 'catalog' | 'manual'
   originalAmount: number
-  discountApplied: number
-  finalAmount: number
   clientName?: string
   clientPhone?: string
 }) {
+  const [coupon] = await db
+    .select(couponEligibilitySelect)
+    .from(coupons)
+    .leftJoin(influencers, eq(coupons.influencerId, influencers.id))
+    .where(eq(coupons.id, data.couponId))
+    .limit(1)
+
+  const result = evaluateCouponEligibility(coupon, data.originalAmount)
+  if (!result.valid) {
+    throw new Error(result.error)
+  }
+
   await db.insert(couponUses).values({
     couponId: data.couponId,
     saleId: data.saleId ?? null,
     source: data.source,
     originalAmount: String(data.originalAmount),
-    discountApplied: String(data.discountApplied),
-    finalAmount: String(data.finalAmount),
+    discountApplied: String(result.discountAmount),
+    finalAmount: String(result.finalAmount),
     clientName: data.clientName ?? null,
     clientPhone: data.clientPhone ?? null,
   })

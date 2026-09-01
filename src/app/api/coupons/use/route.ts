@@ -4,7 +4,7 @@ import { recordCouponUse } from '@/actions/coupons'
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
-    if (!data.couponId || !data.originalAmount || !data.discountApplied || !data.finalAmount) {
+    if (!data.couponId || !data.originalAmount) {
       return NextResponse.json({ success: false, error: 'Parámetros inválidos' }, { status: 400 })
     }
     await recordCouponUse({
@@ -12,13 +12,12 @@ export async function POST(req: NextRequest) {
       saleId: data.saleId,
       source: 'catalog',
       originalAmount: data.originalAmount,
-      discountApplied: data.discountApplied,
-      finalAmount: data.finalAmount,
       clientName: data.clientName,
       clientPhone: data.clientPhone,
     })
     return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ success: false, error: 'Error al registrar el uso' }, { status: 500 })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Error al registrar el uso'
+    return NextResponse.json({ success: false, error: message }, { status: 400 })
   }
 }

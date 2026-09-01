@@ -227,8 +227,6 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
           couponId: couponState.id,
           source: 'manual',
           originalAmount: total + couponState.discountAmount,
-          discountApplied: couponState.discountAmount,
-          finalAmount: total,
         })
       }
 
