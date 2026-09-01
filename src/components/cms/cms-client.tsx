@@ -826,8 +826,11 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
   const [featuredEnabled, setFeaturedEnabled] = useState(config.featured_section_enabled === 'true')
   const [featuredTitle, setFeaturedTitle] = useState(config.featured_section_title ?? 'Destacados')
   const [curatedPicksEyebrow, setCuratedPicksEyebrow] = useState(config.curated_picks_eyebrow ?? 'Si no sabés qué comprar')
+  const [curatedPicksEyebrowColor, setCuratedPicksEyebrowColor] = useState(config.curated_picks_eyebrow_color ?? '#169FB6')
   const [curatedPicksTitle, setCuratedPicksTitle] = useState(config.curated_picks_title ?? 'Empezá por acá')
+  const [curatedPicksTitleColor, setCuratedPicksTitleColor] = useState(config.curated_picks_title_color ?? '#0A0A0A')
   const [curatedPicksSubtitle, setCuratedPicksSubtitle] = useState(config.curated_picks_subtitle ?? 'Combos armados para arrancar sin vueltas.')
+  const [curatedPicksSubtitleColor, setCuratedPicksSubtitleColor] = useState(config.curated_picks_subtitle_color ?? '#71717A')
 
   async function handleSave() {
     setLoading(true)
@@ -856,8 +859,11 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
         featured_section_enabled: featuredEnabled ? 'true' : 'false',
         featured_section_title: featuredTitle,
         curated_picks_eyebrow: curatedPicksEyebrow,
+        curated_picks_eyebrow_color: curatedPicksEyebrowColor,
         curated_picks_title: curatedPicksTitle,
+        curated_picks_title_color: curatedPicksTitleColor,
         curated_picks_subtitle: curatedPicksSubtitle,
+        curated_picks_subtitle_color: curatedPicksSubtitleColor,
       })
       toast.success('Configuración guardada')
       router.refresh()
@@ -1170,32 +1176,65 @@ function SiteConfigTab({ config }: { config: Record<string, string> }) {
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sección &quot;Empezá por acá&quot;</h3>
         <div className="space-y-3 bg-card rounded-xl border border-border p-4">
           <p className="text-xs text-muted-foreground">Las cards de esa sección se gestionan desde &quot;Empezá por acá&quot; en el menú lateral — acá solo se edita el texto de encabezado.</p>
-          <div className="space-y-1.5">
-            <Label htmlFor="curated-picks-eyebrow">Texto pequeño de arriba</Label>
-            <Input
-              id="curated-picks-eyebrow"
-              value={curatedPicksEyebrow}
-              onChange={e => setCuratedPicksEyebrow(e.target.value)}
-              placeholder="Si no sabés qué comprar"
-            />
+          <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+            <div className="space-y-1.5">
+              <Label htmlFor="curated-picks-eyebrow">Texto pequeño de arriba</Label>
+              <Input
+                id="curated-picks-eyebrow"
+                value={curatedPicksEyebrow}
+                onChange={e => setCuratedPicksEyebrow(e.target.value)}
+                placeholder="Si no sabés qué comprar"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Color</Label>
+              <input
+                type="color"
+                value={curatedPicksEyebrowColor}
+                onChange={e => setCuratedPicksEyebrowColor(e.target.value)}
+                className="h-9 w-16 cursor-pointer rounded border border-border bg-transparent p-0.5"
+              />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="curated-picks-title">Título de la sección</Label>
-            <Input
-              id="curated-picks-title"
-              value={curatedPicksTitle}
-              onChange={e => setCuratedPicksTitle(e.target.value)}
-              placeholder="Empezá por acá"
-            />
+          <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+            <div className="space-y-1.5">
+              <Label htmlFor="curated-picks-title">Título de la sección</Label>
+              <Input
+                id="curated-picks-title"
+                value={curatedPicksTitle}
+                onChange={e => setCuratedPicksTitle(e.target.value)}
+                placeholder="Empezá por acá"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Color</Label>
+              <input
+                type="color"
+                value={curatedPicksTitleColor}
+                onChange={e => setCuratedPicksTitleColor(e.target.value)}
+                className="h-9 w-16 cursor-pointer rounded border border-border bg-transparent p-0.5"
+              />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="curated-picks-subtitle">Bajada</Label>
-            <Input
-              id="curated-picks-subtitle"
-              value={curatedPicksSubtitle}
-              onChange={e => setCuratedPicksSubtitle(e.target.value)}
-              placeholder="Combos armados para arrancar sin vueltas."
-            />
+          <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
+            <div className="space-y-1.5">
+              <Label htmlFor="curated-picks-subtitle">Bajada</Label>
+              <Input
+                id="curated-picks-subtitle"
+                value={curatedPicksSubtitle}
+                onChange={e => setCuratedPicksSubtitle(e.target.value)}
+                placeholder="Combos armados para arrancar sin vueltas."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Color</Label>
+              <input
+                type="color"
+                value={curatedPicksSubtitleColor}
+                onChange={e => setCuratedPicksSubtitleColor(e.target.value)}
+                className="h-9 w-16 cursor-pointer rounded border border-border bg-transparent p-0.5"
+              />
+            </div>
           </div>
         </div>
       </div>
