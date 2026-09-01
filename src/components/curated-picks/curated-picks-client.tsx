@@ -60,6 +60,7 @@ function CuratedPickFormDialog({
     const data = {
       position: mode === 'edit' && pick ? pick.position : nextPosition,
       headline: fd.get('headline') as string,
+      subheadline: (fd.get('subheadline') as string) || null,
       description: (fd.get('description') as string) || null,
       comboSku,
     }
@@ -94,6 +95,10 @@ function CuratedPickFormDialog({
           <div className="space-y-1.5">
             <Label htmlFor="headline">Título *</Label>
             <Input id="headline" name="headline" required defaultValue={pick?.headline} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="subheadline">Subtítulo</Label>
+            <Input id="subheadline" name="subheadline" defaultValue={pick?.subheadline ?? ''} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="description">Descripción</Label>
@@ -195,6 +200,7 @@ export function CuratedPicksClient({ picks, combos }: Props) {
                 </TableCell>
                 <TableCell className="font-medium">
                   {pick.headline}
+                  {pick.subheadline && <p className="text-xs text-muted-foreground font-normal">{pick.subheadline}</p>}
                   {pick.description && <p className="text-xs text-muted-foreground font-normal">{pick.description}</p>}
                 </TableCell>
                 <TableCell>

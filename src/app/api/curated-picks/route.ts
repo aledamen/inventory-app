@@ -16,6 +16,7 @@ export async function GET() {
       return {
         position: pick.position,
         headline: pick.headline,
+        subheadline: pick.subheadline,
         description: pick.description,
         product,
       }

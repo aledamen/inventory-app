@@ -11,6 +11,7 @@ export type CuratedPick = typeof curatedPicks.$inferSelect
 type CuratedPickInput = {
   position: number
   headline: string
+  subheadline?: string | null
   description?: string | null
   comboSku: string
 }
@@ -31,6 +32,7 @@ export async function createCuratedPick(data: CuratedPickInput): Promise<{ id: n
     .values({
       position: data.position,
       headline: data.headline,
+      subheadline: data.subheadline ?? null,
       description: data.description ?? null,
       comboSku: data.comboSku,
     })
@@ -46,6 +48,7 @@ export async function updateCuratedPick(id: number, data: Partial<CuratedPickInp
     .set({
       ...(data.position !== undefined && { position: data.position }),
       ...(data.headline !== undefined && { headline: data.headline }),
+      ...('subheadline' in data && { subheadline: data.subheadline ?? null }),
       ...('description' in data && { description: data.description ?? null }),
       ...(data.comboSku !== undefined && { comboSku: data.comboSku }),
       updatedAt: new Date(),
