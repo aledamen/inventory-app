@@ -75,6 +75,12 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
 
   const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
   const selectedClientName = clients.find(c => c.id === selectedClientId)?.name ?? null
+  const [clientQuery, setClientQuery] = useState('')
+  const filteredClientNames = useMemo(() => {
+    const q = clientQuery.trim().toLowerCase()
+    if (!q) return clients.map(c => c.name)
+    return clients.filter(c => c.name.toLowerCase().includes(q)).map(c => c.name)
+  }, [clients, clientQuery])
 
   const availableProducts = products.filter(p => p.stock > 0)
   const availableCombos = combos.filter(c => c.availableStock > 0)
@@ -129,6 +135,7 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
     setCouponCode('')
     setCouponState(null)
     setSelectedClientId(null)
+    setClientQuery('')
   }
 
   async function handleApplyCoupon() {
@@ -479,8 +486,14 @@ export function SaleFormDialog({ products, lookups, combos = [], clients = [], c
             <Label>Cliente *</Label>
             <Combobox
               items={clients.map(c => c.name)}
+              filteredItems={filteredClientNames}
+              inputValue={clientQuery}
+              onInputValueChange={setClientQuery}
               value={selectedClientName}
-              onValueChange={v => setSelectedClientId(v ? (clients.find(c => c.name === v)?.id ?? null) : null)}
+              onValueChange={v => {
+                setSelectedClientId(v ? (clients.find(c => c.name === v)?.id ?? null) : null)
+                setClientQuery(v ?? '')
+              }}
             >
               <ComboboxInput showClear placeholder="Buscar cliente..." className="w-full" />
               <ComboboxContent>

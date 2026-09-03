@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -38,9 +38,16 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
   const [paymentMethodId, setPaymentMethodId] = useState(sale.paymentMethodId ? String(sale.paymentMethodId) : '')
   const [selectedClientId, setSelectedClientId] = useState<number | null>(sale.clientId ?? null)
   const selectedClientName = clients.find(c => c.id === selectedClientId)?.name ?? null
+  const [clientQuery, setClientQuery] = useState(selectedClientName ?? '')
+  const filteredClientNames = useMemo(() => {
+    const q = clientQuery.trim().toLowerCase()
+    if (!q) return clients.map(c => c.name)
+    return clients.filter(c => c.name.toLowerCase().includes(q)).map(c => c.name)
+  }, [clients, clientQuery])
 
   function handleClientChange(name: string | null) {
     setSelectedClientId(name ? (clients.find(c => c.name === name)?.id ?? null) : null)
+    setClientQuery(name ?? '')
   }
 
   const selectedProduct = products.find(p => p.id === Number(productId))
@@ -142,6 +149,9 @@ export function SaleEditDialog({ sale, products, lookups, clients = [] }: Props)
               <Label>Cliente</Label>
               <Combobox
                 items={clients.map(c => c.name)}
+                filteredItems={filteredClientNames}
+                inputValue={clientQuery}
+                onInputValueChange={setClientQuery}
                 value={selectedClientName}
                 onValueChange={v => handleClientChange(v as string | null)}
               >
